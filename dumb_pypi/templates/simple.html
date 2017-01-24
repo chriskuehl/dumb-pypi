@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Simple index</title>
+        <meta name="api-version" value="2" />
+    </head>
+    <body>
+        <h1>Simple index</h1>
+        <p>Generated on {{date}}.</p>
+        <ul>
+            {% for package in package_names %}
+                <li><a href="{{package}}">{{package}}</a></li>
+            {% endfor %}
+        </ul>
+    </body>
+</html>

@@ -7,7 +7,11 @@ setup(
     version='0.0.0',
     author='Chris Kuehl',
     author_email='ckuehl@ocf.berkeley.edu',
-    py_modules=('dumb_pypi',),
+    packages=('dumb_pypi',),
+    install_requires=(
+        'jinja2',
+        'pip>=9.0.0',
+    ),
     classifiers={
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
@@ -15,7 +19,7 @@ setup(
     },
     entry_points={
         'console_scripts': (
-	    'dumb-pypi = dumb_pypi.main',
+	    'dumb-pypi = dumb_pypi.main:main',
         ),
     },
 )

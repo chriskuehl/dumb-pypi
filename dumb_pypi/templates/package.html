@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+    <head>
+        <title>{{package_name}}</title>
+        <meta name="api-version" value="2" />
+    </head>
+    <body>
+        <h1>{{package_name}}</h1>
+        <ul>
+            {% for version in versions %}
+                <li><a href="../../pool/{{version.filename}}">{{version.filename}}</a></li>
+            {% endfor %}
+        </ul>
+    </body>
+</html>
