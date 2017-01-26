@@ -1,4 +1,3 @@
-from setuptools import find_packages
 from setuptools import setup
 
 
@@ -19,7 +18,7 @@ setup(
     },
     entry_points={
         'console_scripts': (
-	    'dumb-pypi = dumb_pypi.main:main',
+            'dumb-pypi = dumb_pypi.main:main',
         ),
     },
 )

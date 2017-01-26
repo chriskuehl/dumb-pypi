@@ -8,3 +8,5 @@ venv: vendor/venv-update setup.py requirements-dev.txt
 .PHONY: test
 test: venv
 	venv/bin/py.test -v tests
+	venv/bin/pre-commit install -f --install-hooks
+	venv/bin/pre-commit run --all-files
