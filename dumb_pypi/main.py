@@ -4,7 +4,6 @@ import collections
 import operator
 import os
 import os.path
-import re
 import shutil
 from datetime import datetime
 
@@ -12,19 +11,37 @@ import jinja2
 from pip.wheel import Wheel
 
 
-ARCHIVE_EXTENSIONS = frozenset((
-    '.zip', '.tar.gz', '.tgz', '.tar.bz2', '.egg',
-))
 jinja_env = jinja2.Environment(
     loader=jinja2.PackageLoader('dumb_pypi', 'templates'),
     autoescape=True,
 )
 
 
-def normalize_package_name(name):
-    name = name.lower()
-    name = re.sub('[-_.]+', '-', name)
-    return name
+def guess_name_version_from_filename(name):
+    if name.endswith('.whl'):
+        wheel = Wheel(name)
+        return wheel.name, wheel.version
+    else:
+        # These don't have a well-defined format like wheels do, so they are
+        # sort of "best effort", with lots of tests to back them up.
+        # The most important thing is to correctly parse the name.
+        if name.split('.')[-1] in ('gz', 'bz2'):
+            name, _ = name.rsplit('.', 1)
+
+        name, _ = name.rsplit('.', 1)
+
+        if '-' not in name:
+            name, version = name, None
+        elif name.count('-') == 1:
+            name, version = name.split('-')
+        else:
+            parts = name.split('-')
+            for i in range(len(parts) - 1, -1, -1):
+                part = parts[i]
+                if '.' in part:
+                    name, version = '-'.join(parts[0:i]), '-'.join(parts[i:])
+
+        return name, version
 
 
 class Package(collections.namedtuple('Package', (
@@ -46,41 +63,12 @@ class Package(collections.namedtuple('Package', (
 
     @classmethod
     def from_path(cls, path):
-        filename = os.path.basename(path)
-        _, ext = os.path.splitext(filename)
-
-        if ext == '.whl':
-            wheel = Wheel(filename)
-            return cls(
-                path=path,
-                name=wheel.name,
-                version=wheel.version,
-            )
-        else:
-            for e in ARCHIVE_EXTENSIONS:
-                if not filename.endswith(e):
-                    continue
-
-                # these aren't well structured, so this is best-effort
-                name = filename[0:-len(e)]
-                if '-' not in name:
-                    name, version = name, None
-                else:
-                    name, version = name.rsplit('-', 1)
-
-                name = normalize_package_name(name)
-
-                return cls(
-                    path=path,
-                    name=name,
-                    version=version,
-                )
-            else:
-                raise NotImplementedError(
-                    'Not sure how to parse filename: {}'.format(
-                        filename,
-                    ),
-                )
+        name, version = guess_name_version_from_filename(os.path.basename(path))
+        return cls(
+            path=path,
+            name=name,
+            version=version,
+        )
 
 
 def build_repo(packages_path, output_path):

@@ -1,3 +1,5 @@
 coverage
+ephemeral-port-reserve
 pre-commit
 pytest
+requests
