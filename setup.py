@@ -10,7 +10,6 @@ setup(
     install_requires=(
         'jinja2',
         'packaging',
-        'pip>=9.0.0',
     ),
     classifiers={
         'Programming Language :: Python :: 3',

@@ -8,6 +8,8 @@ import shutil
 from datetime import datetime
 
 import jinja2
+import packaging.utils
+import packaging.version
 from pip.wheel import Wheel
 
 
@@ -15,6 +17,13 @@ jinja_env = jinja2.Environment(
     loader=jinja2.PackageLoader('dumb_pypi', 'templates'),
     autoescape=True,
 )
+
+
+def remove_extension(name):
+    if name.endswith(('gz', 'bz2')):
+        name, _ = name.rsplit('.', 1)
+    name, _ = name.rsplit('.', 1)
+    return name
 
 
 def guess_name_version_from_filename(name):
@@ -25,10 +34,7 @@ def guess_name_version_from_filename(name):
         # These don't have a well-defined format like wheels do, so they are
         # sort of "best effort", with lots of tests to back them up.
         # The most important thing is to correctly parse the name.
-        if name.split('.')[-1] in ('gz', 'bz2'):
-            name, _ = name.rsplit('.', 1)
-
-        name, _ = name.rsplit('.', 1)
+        name = remove_extension(name)
 
         if '-' not in name:
             name, version = name, None
@@ -58,15 +64,19 @@ class Package(collections.namedtuple('Package', (
 
     @property
     def sort_key(self):
-        # TODO: pkg_resources has a function for sorting versions correctly
-        return (self.name, self.version, self.filename)
+        """Sort key for a filename.
+
+        Based on pkg_resources._by_version_descending.
+        """
+        name = remove_extension(self.filename)
+        return tuple(packaging.version.parse(part) for part in name.split('-'))
 
     @classmethod
     def from_path(cls, path):
         name, version = guess_name_version_from_filename(os.path.basename(path))
         return cls(
             path=path,
-            name=name,
+            name=packaging.utils.canonicalize_name(name),
             version=version,
         )
 
@@ -105,6 +115,7 @@ def build_repo(packages_path, output_path):
                 versions=sorted(versions, key=operator.attrgetter('sort_key')),
             ))
 
+        # TODO: eventually, don't actually want to copy files
         for version in versions:
             assert '/' not in version.filename, version.filename
             assert '..' not in version.filename, version.filename
