@@ -15,6 +15,7 @@ from dumb_pypi import main
     ),
 
     # other stuff
+    ('aspy.yaml.zip', 'aspy.yaml', None),
     ('aspy.yaml-0.2.1.tar.gz', 'aspy.yaml', '0.2.1'),
     ('numpy-1.11.0rc1.tar.gz', 'numpy', '1.11.0rc1'),
     ('pandas-0.2beta.tar.gz', 'pandas', '0.2beta'),
