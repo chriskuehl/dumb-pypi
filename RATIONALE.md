@@ -1,5 +1,8 @@
 # Design rationale
 
+This document contains various bits of information discovered while
+implementing dumb-pypi, and explains why certain decisions were made.
+
 [PEP 503](https://www.python.org/dev/peps/pep-0503/) is the canonical reference
 for the PyPI "simple" API, but it is not complete (if you follow it fully, old
 clients cannot use your PyPI server).
@@ -70,13 +73,43 @@ def normalize(name):
 ```
 
 Unfortunately this means you'll need to regex sub incoming requests, which is a
-bit more than the rewrite engines in Apache or nginx can accomplish.
+bit more than the rewrite engines in Apache or nginx can accomplish, but it can
+still be accomplished pretty easily.
 
-This can easily be implemented in a web server like nginx, which enables you to
-serve from a set of static files (i.e. no need to run a Python service).
-
-In nginx, you would write:
+In nginx, you could write:
 
 ```nginx
-rewrite ^/simple/([^/])(.*)$ /simple/$1 redirect;
+TODO: this
 ```
+
+
+## "api-version" meta attribute
+
+Old versions of pip (like 6.0.0) have extra restrictions when using a meta tag
+like `<meta name="api-version" value="2" />`. Newer versions (at least `>= 8`,
+possibly earlier) do not enforce these.
+
+Some example restrictions:
+
+* Links must have `rel="internal"`, even if you're using a relative URL or a
+  URL to the same server, or pip refuses to download files unless you specify
+  `--allow-external {packagename}`. This isn't a problem—we could do this.
+
+* Packages must have hashes at the end of their links. This is a bigger
+  problem, because it means that in order to construct the index, we need to
+  have the actual files on-hand, and hash them (which is prohibitively
+  expensive to do during a full rebuild with tens of thousands of packages).
+
+  This is an admittedly "nice-to-have" feature, but it significantly increases
+  complexity. Hashing is too slow to do on-demand, so we'd need to somehow
+  cache those, and then figure out when to invalidate them, and it gets too
+  complicated quickly.
+
+  For internal PyPI registries, this is an unnecessary feature, since you
+  should be serving both the index and the packages from a trusted source over
+  HTTPS, which already ensures integrity. The only real case that the hash is
+  necessary is when you trust the index server but not the file host, which is
+  not a scenario most people are concerned with.
+
+Because of the above, we do not set this meta attribute. This gains us
+compatibility with older versions of pip at no cost.
