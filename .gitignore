@@ -1,4 +1,6 @@
 *.py[co]
 /.cache
 /.coverage
+/build
+/dist
 /venv
