@@ -1,55 +1,78 @@
-import collections
+import os.path
 import subprocess
-import sys
-import time
-import uuid
+import tempfile
 
-import ephemeral_port_reserve
 import pytest
-import requests
+
+from dumb_pypi import main
+from testing import make_package
 
 
-UrlAndPath = collections.namedtuple('UrlAndPath', ('url', 'path'))
+def install_packages(path, package_names):
+    """Deploy fake packages with the given names into path."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for package in package_names:
+            make_package(os.path.join(tmpdir, package))
+
+        main.main((tmpdir, path.strpath))
 
 
-@pytest.fixture(scope='session')
-def running_server(tmpdir_factory):
-    ip = '127.0.0.1'
-    port = ephemeral_port_reserve.reserve(ip=ip)
-    url = 'http://{}:{}'.format(ip, port)
-
-    path = tmpdir_factory.mktemp('http')
-    proc = subprocess.Popen(
-        (sys.executable, '-m', 'http.server', '-b', ip, str(port)),
-        cwd=path.strpath,
+def pip_download(pip, index_url, path, *spec):
+    subprocess.check_call(
+        (pip, 'install', '-i', index_url, '--download', path) + spec,
     )
-    try:
-        for _ in range(100):
-            try:
-                requests.get(url)
-            except requests.exceptions.ConnectionError:
-                time.sleep(0.1)
-            else:
-                break
-        else:
-            raise AssertionError('http.server did not start fast enough.')
-        yield UrlAndPath(url, path)
-    finally:
-        proc.terminate()
-        proc.wait()
 
 
-@pytest.fixture
-def tmpweb(running_server, tmpdir):
-    path = tmpdir.join('pypi')
-    path.mkdir()
+@pytest.mark.parametrize('package_names', (
+    ('aspy.yaml-0.2.1.zip',),
+    ('aspy.yaml-0.2.1.tar',),
+    ('aspy.yaml-0.2.1.tar.gz',),
+    ('aspy.yaml-0.2.1.tgz',),
+    # TODO: fix wheels
+    #    ('aspy.yaml-0.2.1-py2.py3-none-any.whl',)
+))
+@pytest.mark.parametrize('requirement', (
+    'aspy.yaml',
+    'aspy.yaml>0.2,<0.3',
+    'aspy.yaml==0.2.1',
+    'ASPY.YAML==0.2.1',
+))
+def test_normalized_packages_modern_pip(
+        tmpdir,
+        tmpweb,
+        modern_pips,
+        package_names,
+        requirement,
+):
+    install_packages(tmpweb.path, package_names)
+    pip_download(
+        modern_pips,
+        tmpweb.url + '/simple',
+        tmpdir.strpath,
+        requirement,
+    )
 
-    # symlink some uuid under the running server path to our tmpdir
-    name = str(uuid.uuid4())
-    running_server.path.join(name).mksymlinkto(path)
 
-    return UrlAndPath('{}/{}'.format(running_server.url, name), path)
-
-
-def test_lol(tmpweb):
-    print(tmpweb)
+@pytest.mark.xfail(reason='wheels do not work')
+@pytest.mark.parametrize('requirement', (
+    'aspy-yaml==0.2.1',
+))
+def test_normalized_packages_modern_pip_wheels(
+        tmpdir,
+        tmpweb,
+        modern_pips,
+        package_names,
+        requirement,
+):
+    """Wheels are special: unlike archives, the package names are fully
+    normalized, so you can install with a wider varierty of names.
+    """
+    install_packages(tmpweb.path, (
+        'aspy.yaml-0.2.1-py2.py3-none-any.whl',
+    ))
+    pip_download(
+        modern_pips,
+        tmpweb.url + '/simple',
+        tmpdir.strpath,
+        requirement,
+    )
