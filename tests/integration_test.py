@@ -13,7 +13,6 @@ def install_packages(path, package_names):
     with tempfile.TemporaryDirectory() as tmpdir:
         for package in package_names:
             make_package(os.path.join(tmpdir, package))
-
         main.main((tmpdir, path.strpath))
 
 
@@ -28,8 +27,7 @@ def pip_download(pip, index_url, path, *spec):
     ('aspy.yaml-0.2.1.tar',),
     ('aspy.yaml-0.2.1.tar.gz',),
     ('aspy.yaml-0.2.1.tgz',),
-    # TODO: fix wheels
-    #    ('aspy.yaml-0.2.1-py2.py3-none-any.whl',)
+    ('aspy.yaml-0.2.1-py2.py3-none-any.whl',)
 ))
 @pytest.mark.parametrize('requirement', (
     'aspy.yaml',
@@ -53,15 +51,15 @@ def test_normalized_packages_modern_pip(
     )
 
 
-@pytest.mark.xfail(reason='wheels do not work')
 @pytest.mark.parametrize('requirement', (
-    'aspy-yaml==0.2.1',
+    'aspy-yaml',
+    'aspy-yaml>0.2,<0.3',
+    'ASPY-YAML==0.2.1',
 ))
 def test_normalized_packages_modern_pip_wheels(
         tmpdir,
         tmpweb,
         modern_pips,
-        package_names,
         requirement,
 ):
     """Wheels are special: unlike archives, the package names are fully
