@@ -73,14 +73,9 @@ def normalize(name):
 ```
 
 Unfortunately this means you'll need to regex sub incoming requests, which is a
-bit more than the rewrite engines in Apache or nginx can accomplish, but it can
-still be accomplished pretty easily.
-
-In nginx, you could write:
-
-```nginx
-TODO: this
-```
+bit more than the standard rewrite engines in Apache or nginx can accomplish,
+but it can still be accomplished pretty easily. The README contains an example
+of how you could do it with nginx.
 
 
 ## "api-version" meta attribute
