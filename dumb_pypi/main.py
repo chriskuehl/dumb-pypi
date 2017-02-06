@@ -36,18 +36,19 @@ def guess_name_version_from_filename(name):
         # sort of "best effort", with lots of tests to back them up.
         # The most important thing is to correctly parse the name.
         name = remove_extension(name)
+        version = None
 
-        if '-' not in name:
-            name, version = name, None
-        elif name.count('-') == 1:
-            name, version = name.split('-')
-        else:
-            parts = name.split('-')
-            for i in range(len(parts) - 1, -1, -1):
-                part = parts[i]
-                if '.' in part:
-                    name, version = '-'.join(parts[0:i]), '-'.join(parts[i:])
+        if '-' in name:
+            if name.count('-') == 1:
+                name, version = name.split('-')
+            else:
+                parts = name.split('-')
+                for i in range(len(parts) - 1, -1, -1):
+                    part = parts[i]
+                    if '.' in part and re.search('[0-9]', part):
+                        name, version = '-'.join(parts[0:i]), '-'.join(parts[i:])
 
+        assert len(name) > 0, (name, version)
         return name, version
 
 

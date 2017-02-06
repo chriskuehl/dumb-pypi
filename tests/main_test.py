@@ -16,11 +16,13 @@ from dumb_pypi import main
 
     # other stuff
     ('aspy.yaml.zip', 'aspy.yaml', None),
+    ('ocflib-3-4.tar.gz', 'ocflib-3-4', None),
     ('aspy.yaml-0.2.1.tar.gz', 'aspy.yaml', '0.2.1'),
     ('numpy-1.11.0rc1.tar.gz', 'numpy', '1.11.0rc1'),
     ('pandas-0.2beta.tar.gz', 'pandas', '0.2beta'),
     ('scikit-learn-0.15.1.tar.gz', 'scikit-learn', '0.15.1'),
     ('ocflib-2015.11.23.20.2.tar.gz', 'ocflib', '2015.11.23.20.2'),
+    ('mesos.cli-0.1.3-py2.7.egg', 'mesos.cli', '0.1.3-py2.7'),
 
     # inspired by pypiserver's tests
     ('flup-123-1.0.3.dev-20110405.tar.gz', 'flup-123', '1.0.3.dev-20110405'),
