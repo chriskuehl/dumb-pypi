@@ -6,23 +6,37 @@ dumb-pypi
 [![PyPI version](https://badge.fury.io/py/dumb-pypi.svg)](https://pypi.python.org/pypi/dumb-pypi)
 
 
-`dumb-pypi` is a generator of PyPI-compatible "simple" package indexes, backed
-entirely by static files.
+`dumb-pypi` is a simple read-only PyPI index server generator, backed entirely
+by static files. It is ideal for internal use by organizations that have a
+bunch of their own packages which they'd like to make available.
+
+
+## A rant about static files (and why you should use dumb-pypi)
 
 The main difference between dumb-pypi and other PyPI implementations is that
-dumb-pypi has *no server component*. It is instead a script that, given a list
-of Python package names, generates a bunch of static files which you can serve
+dumb-pypi has *no server component*. It's just a script that, given a list of
+Python package names, generates a bunch of static files which you can serve
 from any webserver, or even directly from S3.
 
-This has some nice benefits:
+There's something magical about being able to serve a package repository
+entirely from a tree of static files. It's incredibly easy to make it fast and
+highly-available when you don't need to worry about running a bunch of
+application servers (which are serving a bunch of read-only queries that could
+have just been pre-generated).
 
-* **File serving is extremely fast.** nginx can serve your static files faster than you'd
-  ever need. In practice, there are almost no limits on the number of packages
-  or number of versions per package.
+Linux distributions have been doing this right for decades. Debian has a system
+of hundreds of mirrors, and the entire thing is powered entirely by some fancy
+`rsync` commands.
+
+For the maintainer of a PyPI repositry, `dumb-pypi` has some nice properties:
+
+* **File serving is extremely fast.** nginx can serve your static files faster
+  than you'd ever need. In practice, there are almost no limits on the number
+  of packages or number of versions per package.
 
 * **It's very simple.** There's no complicated WSGI app to deploy, no
-  databases, and no caches to purge. You just need to run the script whenever
-  you have new packages, and your index server is ready in seconds.
+  databases, and no caches. You just need to run the script whenever you have
+  new packages, and your index server is ready in seconds.
 
 For more about why this design was chosen, see the detailed
 [`RATIONALE.md`][rationale] in this repo.
