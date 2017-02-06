@@ -22,4 +22,5 @@ setup(
             'dumb-pypi = dumb_pypi.main:main',
         ),
     },
+    package_data={'dumb_pypi': ('templates/*',)},
 )
