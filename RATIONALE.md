@@ -69,7 +69,7 @@ PEP 503 defines it like this:
 
 ```python
 def normalize(name):
-    return re.sub(r"[-_.]+", "-", name).lower()
+    return re.sub(r'[-_.]+', '-', name).lower()
 ```
 
 Unfortunately this means you'll need to regex sub incoming requests, which is a

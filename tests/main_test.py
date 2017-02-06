@@ -46,3 +46,25 @@ def test_guess_name_version_from_filename_only_name(filename, name, version):
 
     # If you can make this assertion fail, great! Move it up above!
     assert parsed_version != version
+
+
+def test_build_repo_smoke_test(tmpdir):
+    main.build_repo(
+        frozenset(('ocflib-2016.12.10.1.48-py2.py3-none-any.whl',)),
+        tmpdir.strpath,
+        '../../pool/',
+    )
+    assert tmpdir.join('simple').check(dir=True)
+    assert tmpdir.join('simple', 'index.html').check(file=True)
+    assert tmpdir.join('simple', 'ocflib').check(dir=True)
+    assert tmpdir.join('simple', 'ocflib', 'index.html').check(file=True)
+
+
+@pytest.mark.parametrize('package_name', (
+    '..',
+    '/ocflib-2.tar.gz',
+    'ocflib-2.tar.gz/../',
+))
+def test_build_repo_bad_package_names(tmpdir, package_name):
+    with pytest.raises(ValueError):
+        main.build_repo(frozenset((package_name,)), tmpdir.strpath, '../../pool/')

@@ -1,6 +1,4 @@
-import os.path
 import subprocess
-import tempfile
 
 import pytest
 
@@ -10,10 +8,18 @@ from testing import make_package
 
 def install_packages(path, package_names):
     """Deploy fake packages with the given names into path."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        for package in package_names:
-            make_package(os.path.join(tmpdir, package))
-        main.main((tmpdir, path.strpath))
+    pool = path.join('pool').mkdir()
+    for package in package_names:
+        make_package(pool.join(package).strpath)
+
+    package_list = path.join('package-list')
+    package_list.write('\n'.join(package_names) + '\n')
+
+    main.main((
+        '--package-list', package_list.strpath,
+        '--output-dir', path.strpath,
+        '--packages-url', '../../pool/',
+    ))
 
 
 def pip_download(pip, index_url, path, *spec):

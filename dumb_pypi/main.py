@@ -4,7 +4,8 @@ import collections
 import operator
 import os
 import os.path
-import shutil
+import re
+import sys
 from datetime import datetime
 
 import jinja2
@@ -51,16 +52,13 @@ def guess_name_version_from_filename(name):
 
 
 class Package(collections.namedtuple('Package', (
-    'path',
+    'filename',
     'name',
     'version',
+    'url',
 ))):
 
     __slots__ = ()
-
-    @property
-    def filename(self):
-        return os.path.basename(self.path)
 
     @property
     def sort_key(self):
@@ -72,65 +70,71 @@ class Package(collections.namedtuple('Package', (
         return tuple(packaging.version.parse(part) for part in name.split('-'))
 
     @classmethod
-    def from_path(cls, path):
-        name, version = guess_name_version_from_filename(os.path.basename(path))
+    def from_name(cls, filename, base_url):
+        if not re.match('[a-zA-Z0-9_\-\.]+$', filename) or '..' in filename:
+            raise ValueError('Unsafe package name: {}'.format(filename))
+
+        name, version = guess_name_version_from_filename(filename)
         return cls(
-            path=path,
+            filename=filename,
             name=packaging.utils.canonicalize_name(name),
             version=version,
+            url=base_url.rstrip('/') + '/' + filename,
         )
 
 
-def build_repo(packages_path, output_path):
+def build_repo(package_names, output_path, packages_url):
     packages = collections.defaultdict(set)
-    for filename in os.listdir(packages_path):
-        full_path = os.path.join(packages_path, filename)
-        package = Package.from_path(full_path)
+    for filename in package_names:
+        package = Package.from_name(filename, packages_url)
         packages[package.name].add(package)
 
     simple = os.path.join(output_path, 'simple')
     os.makedirs(simple, exist_ok=True)
 
-    pool = os.path.join(output_path, 'pool')
-    os.makedirs(pool, exist_ok=True)
+    current_date = datetime.now().isoformat()
 
     # /simple/index.html
     with open(os.path.join(simple, 'index.html'), 'w') as f:
         f.write(jinja_env.get_template('simple.html').render(
-            date=datetime.now().isoformat(),
+            date=current_date,
             package_names=sorted(packages),
         ))
 
     for package_name, versions in packages.items():
-        assert '/' not in package_name, package_name
-        assert '..' not in package_name, package_name
-
         package_dir = os.path.join(simple, package_name)
         os.makedirs(package_dir, exist_ok=True)
 
         # /simple/{package}/index.html
         with open(os.path.join(package_dir, 'index.html'), 'w') as f:
             f.write(jinja_env.get_template('package.html').render(
+                date=current_date,
                 package_name=package_name,
                 versions=sorted(versions, key=operator.attrgetter('sort_key')),
             ))
 
-        # TODO: eventually, don't actually want to copy files
-        for version in versions:
-            assert '/' not in version.filename, version.filename
-            assert '..' not in version.filename, version.filename
 
-            # /pool/{filename}
-            shutil.copy(version.path, os.path.join(pool, version.filename))
+def package_list(path):
+    f = sys.stdin if path == '-' else open(path)
+    return frozenset(f.read().splitlines())
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('packages', help='path to packages')
-    parser.add_argument('output_dir', help='path to output directory')
+    parser.add_argument(
+        '--package-list', help='path to a list of packages (one per line)',
+        type=package_list, required=True,
+    )
+    parser.add_argument(
+        '--output-dir', help='path to output to', required=True,
+    )
+    parser.add_argument(
+        '--packages-url',
+        help='url to packages (can be absolute or relative)', required=True,
+    )
     args = parser.parse_args(argv)
 
-    build_repo(args.packages, args.output_dir)
+    build_repo(args.package_list, args.output_dir, args.packages_url)
 
 
 if __name__ == '__main__':
