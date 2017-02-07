@@ -1,0 +1,19 @@
+#!/bin/bash
+# Inspired by https://github.com/pre-commit/pre-commit.github.io/blob/real_master/push_to_gh.sh
+set -euxo pipefail
+
+[ "$TRAVIS_BRANCH" == "master" -a "$TRAVIS_PULL_REQUEST" == "false" ] || exit
+
+rev=$(git rev-parse --short HEAD)
+make test-repo
+
+rm -rf gh-pages
+git init gh-pages
+cp -r test-repo/* gh-pages/
+cd gh-pages
+git add -A .
+git commit \
+    --author "Travis CI <travis@ci>" \
+    -m "Commit generated files from build #${TRAVIS_BUILD_NUMBER} (${rev})"
+git remote add origin "https://${GH_TOKEN}@github.com/chriskuehl/dumb-pypi"
+git push -qf origin HEAD:gh-pages
