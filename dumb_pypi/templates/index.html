@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+    <head>
+        <title>{{title}}</title>
+        <style>
+            /* http://meyerweb.com/eric/tools/css/reset/
+               v2.0 | 20110126
+               License: none (public domain)
+            */
+
+            html, body, div, span, applet, object, iframe,
+            h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+            a, abbr, acronym, address, big, cite, code,
+            del, dfn, em, img, ins, kbd, q, s, samp,
+            small, strike, strong, sub, sup, tt, var,
+            b, u, i, center,
+            dl, dt, dd, ol, ul, li,
+            fieldset, form, label, legend,
+            table, caption, tbody, tfoot, thead, tr, th, td,
+            article, aside, canvas, details, embed,
+            figure, figcaption, footer, header, hgroup,
+            menu, nav, output, ruby, section, summary,
+            time, mark, audio, video {
+                margin: 0;
+                padding: 0;
+                border: 0;
+                font-size: 100%;
+                font: inherit;
+                vertical-align: baseline;
+            }
+            /* HTML5 display-role reset for older browsers */
+            article, aside, details, figcaption, figure,
+            footer, header, hgroup, menu, nav, section {
+                display: block;
+            }
+            body {
+                line-height: 1;
+            }
+            ol, ul {
+                list-style: none;
+            }
+            blockquote, q {
+                quotes: none;
+            }
+            blockquote:before, blockquote:after,
+            q:before, q:after {
+                content: '';
+                content: none;
+            }
+            table {
+                border-collapse: collapse;
+                border-spacing: 0;
+            }
+        </style>
+        <style>
+            body, html {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                font-family: Helvetica, Arial, sans-serif;
+                background-color: #eee;
+            }
+            .container {
+                background-color: white;
+                padding: 20px;
+                max-width: 960px;
+                margin: 0 auto;
+                height: 100%;
+                box-sizing: border-box;
+                position: relative;
+            }
+            .header {
+                display: table;
+                width: 100%;
+                border-bottom: solid 1px #e2e2e2;
+                padding-bottom: 20px;
+                margin-bottom: 10px;
+            }
+            .title {
+                display: table-cell;
+                width: 1px;
+                white-space: nowrap;
+                vertical-align: middle;
+            }
+            h1 {
+                font-weight: bold;
+                font-size: 24px;
+            }
+            .searchbox {
+                display: table-cell;
+                padding-left: 15px;
+                vertical-align: middle;
+            }
+            .searchbox input {
+                width: 100%;
+                margin: 0;
+                padding: 4px;
+                font-size: 16px;
+                box-sizing: border-box;
+            }
+            .packages {
+                overflow-y: scroll;
+                position: absolute;
+                top: 70px;
+                left: 20px;
+                right: 20px;
+                bottom: 20px;
+                outline: solid 1px #ddd;
+            }
+            .packages a {
+                display: block;
+                font-size: 12px;
+                padding: 10px;
+                color: #111;
+                text-decoration: none;
+            }
+            .packages a:hover {
+                background-color: #ffffd4 !important;
+                color: #333;
+            }
+            .packages a.odd {
+                background-color: #fefefe;
+            }
+            .packages a.even {
+                background-color: #f8f8f8;
+            }
+            strong {
+                font-weight: bold;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <div class="header">
+                <div style="display: table-row">
+                    <div class="title">
+                        <h1>{{title}}</h1>
+                    </div>
+                    <div class="searchbox">
+                        <input type="text" autofocus value="" />
+                    </div>
+                </div>
+            </div>
+            <div class="packages">
+                {% for package, latest_version in packages %}
+                    <a class="{{loop.cycle('odd', 'even')}}" href="simple/{{package}}">
+                        <strong>{{package}}</strong> (latest version: {{latest_version}})
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </body>
+</html>

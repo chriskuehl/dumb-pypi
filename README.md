@@ -10,7 +10,7 @@ dumb-pypi
 by static files. It is ideal for internal use by organizations that have a
 bunch of their own packages which they'd like to make available.
 
-You can view [an example generated repo](https://chriskuehl.github.io/dumb-pypi/simple/).
+You can view [an example generated repo](https://chriskuehl.github.io/dumb-pypi/).
 
 
 ## A rant about static files (and why you should use dumb-pypi)

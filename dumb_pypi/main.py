@@ -84,7 +84,7 @@ class Package(collections.namedtuple('Package', (
         )
 
 
-def build_repo(package_names, output_path, packages_url):
+def build_repo(package_names, output_path, packages_url, title):
     packages = collections.defaultdict(set)
     for filename in package_names:
         package = Package.from_name(filename, packages_url)
@@ -94,6 +94,19 @@ def build_repo(package_names, output_path, packages_url):
     os.makedirs(simple, exist_ok=True)
 
     current_date = datetime.now().isoformat()
+
+    # /index.html
+    with open(os.path.join(output_path, 'index.html'), 'w') as f:
+        f.write(jinja_env.get_template('index.html').render(
+            title=title,
+            packages=sorted(
+                (
+                    package,
+                    sorted(packages[package], key=operator.attrgetter('sort_key'))[0].version
+                )
+                for package in packages
+            )
+        ))
 
     # /simple/index.html
     with open(os.path.join(simple, 'index.html'), 'w') as f:
@@ -133,9 +146,18 @@ def main(argv=None):
         '--packages-url',
         help='url to packages (can be absolute or relative)', required=True,
     )
+    parser.add_argument(
+        '--title',
+        help='site title (for web interface)', default='My Private PyPI',
+    )
     args = parser.parse_args(argv)
 
-    build_repo(args.package_list, args.output_dir, args.packages_url)
+    build_repo(
+        args.package_list,
+        args.output_dir,
+        args.packages_url,
+        args.title,
+    )
 
 
 if __name__ == '__main__':

@@ -55,6 +55,7 @@ def test_build_repo_smoke_test(tmpdir):
         frozenset(('ocflib-2016.12.10.1.48-py2.py3-none-any.whl',)),
         tmpdir.strpath,
         '../../pool/',
+        'My Private PyPI',
     )
     assert tmpdir.join('simple').check(dir=True)
     assert tmpdir.join('simple', 'index.html').check(file=True)
@@ -69,4 +70,9 @@ def test_build_repo_smoke_test(tmpdir):
 ))
 def test_build_repo_bad_package_names(tmpdir, package_name):
     with pytest.raises(ValueError):
-        main.build_repo(frozenset((package_name,)), tmpdir.strpath, '../../pool/')
+        main.build_repo(
+            frozenset((package_name,)),
+            tmpdir.strpath,
+            '../../pool/',
+            'My Private PyPI',
+        )
