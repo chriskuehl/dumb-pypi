@@ -36,6 +36,7 @@ def test_guess_name_version_from_filename(filename, name, version):
     ('dumb-init-0.1.0.linux-x86_64.tar.gz', 'dumb-init', '0.1.0'),
     ('greenlet-0.3.4-py3.1-win-amd64.egg', 'greenlet', '0.3.4'),
     ('numpy-1.7.0.win32-py3.1.exe', 'numpy', '1.7.0'),
+    ('surf.sesame2-0.2.1_r291-py2.5.egg', 'surf.sesame2', '0.2.1_r291'),
 ))
 def test_guess_name_version_from_filename_only_name(filename, name, version):
     """Broken version check tests.
@@ -48,6 +49,31 @@ def test_guess_name_version_from_filename_only_name(filename, name, version):
 
     # If you can make this assertion fail, great! Move it up above!
     assert parsed_version != version
+
+
+@pytest.mark.parametrize('filename', (
+    '',
+    'lol',
+    'lol-sup',
+    '-20160920.193125.zip',
+))
+def test_guess_name_version_from_filename_invalid(filename):
+    with pytest.raises(ValueError):
+        main.guess_name_version_from_filename(filename)
+
+
+@pytest.mark.parametrize('filename', (
+    '',
+    'lol',
+    'lol-sup',
+    '-20160920.193125.zip',
+    '..',
+    '/blah-2.tar.gz',
+    'lol-2.tar.gz/../',
+))
+def test_package_invalid(filename):
+    with pytest.raises(ValueError):
+        main.Package.from_filename(filename, '../../pool/')
 
 
 def test_build_repo_smoke_test(tmpdir):
@@ -63,16 +89,38 @@ def test_build_repo_smoke_test(tmpdir):
     assert tmpdir.join('simple', 'ocflib', 'index.html').check(file=True)
 
 
-@pytest.mark.parametrize('package_name', (
-    '..',
-    '/ocflib-2.tar.gz',
-    'ocflib-2.tar.gz/../',
-))
-def test_build_repo_bad_package_names(tmpdir, package_name):
+def test_build_repo_even_with_bad_package_names(tmpdir):
+    main.build_repo(
+        frozenset((
+            '..',
+            '/blah-2.tar.gz',
+            'lol-2.tar.gz/../',
+            'ocflib-2016.12.10.1.48-py2.py3-none-any.whl',
+        )),
+        tmpdir.strpath,
+        '../../pool/',
+        'My Private PyPI',
+    )
+    assert tmpdir.join('simple').check(dir=True)
+    assert tmpdir.join('simple', 'index.html').check(file=True)
+    assert tmpdir.join('simple', 'ocflib').check(dir=True)
+    assert tmpdir.join('simple', 'ocflib', 'index.html').check(file=True)
+
+
+def test_atomic_write(tmpdir):
+    a = tmpdir.join('a')
+    a.write('sup')
+    with main.atomic_write(a.strpath) as f:
+        f.write('lol')
+    assert a.read() == 'lol'
+
+
+def test_atomic_write_exception(tmpdir):
+    a = tmpdir.join('a')
+    a.write('sup')
     with pytest.raises(ValueError):
-        main.build_repo(
-            frozenset((package_name,)),
-            tmpdir.strpath,
-            '../../pool/',
-            'My Private PyPI',
-        )
+        with main.atomic_write(a.strpath) as f:
+            f.write('lol')
+            f.flush()
+            raise ValueError('sorry buddy')
+    assert a.read() == 'sup'

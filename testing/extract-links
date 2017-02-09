@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+package="$1"
+curl -s "https://pypi.python.org/simple/$package/" | grep -Eo '">.+?</a>' | awk -F '<|>' '{print $2}'

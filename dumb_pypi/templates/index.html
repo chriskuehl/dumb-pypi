@@ -56,25 +56,24 @@
             body, html {
                 padding: 0;
                 margin: 0;
-                height: 100%;
                 font-family: Helvetica, Arial, sans-serif;
-                background-color: #eee;
             }
-            .container {
-                background-color: white;
-                padding: 20px;
+            .width {
                 max-width: 960px;
-                margin: 0 auto;
-                height: 100%;
-                box-sizing: border-box;
-                position: relative;
+                    margin: 0 auto;
+            }
+            .header-container {
+                background-color: #e6f8ff;
+                padding: 20px;
+                border-bottom: solid 1px #e2e2e2;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
             }
             .header {
                 display: table;
                 width: 100%;
-                border-bottom: solid 1px #e2e2e2;
-                padding-bottom: 20px;
-                margin-bottom: 10px;
             }
             .title {
                 display: table-cell;
@@ -97,58 +96,87 @@
                 padding: 4px;
                 font-size: 16px;
                 box-sizing: border-box;
+                border: none;
+                line-height: 16px;
             }
             .packages {
-                overflow-y: scroll;
-                position: absolute;
-                top: 70px;
-                left: 20px;
-                right: 20px;
-                bottom: 20px;
-                outline: solid 1px #ddd;
+                margin-top: 75px;
             }
-            .packages a {
+            .package {
                 display: block;
-                font-size: 12px;
+                font-size: 14px;
                 padding: 10px;
                 color: #111;
                 text-decoration: none;
             }
-            .packages a:hover {
-                background-color: #ffffd4 !important;
+            .package:hover {
+                background-color: #ebf1ff !important;
                 color: #333;
             }
-            .packages a.odd {
+            .package.odd {
                 background-color: #fefefe;
             }
-            .packages a.even {
+            .package.even {
                 background-color: #f8f8f8;
             }
             strong {
                 font-weight: bold;
             }
+            .hide { display: none !important; }
         </style>
     </head>
 
     <body>
-        <div class="container">
-            <div class="header">
-                <div style="display: table-row">
-                    <div class="title">
-                        <h1>{{title}}</h1>
-                    </div>
-                    <div class="searchbox">
-                        <input type="text" autofocus value="" />
+        <div class="header-container">
+            <div class="width">
+                <div class="header">
+                    <div style="display: table-row">
+                        <div class="title">
+                            <h1>{{title}}</h1>
+                        </div>
+                        <div class="searchbox">
+                            <input id="search" type="text" autofocus placeholder="Filter" value="" />
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="packages">
-                {% for package, latest_version in packages %}
-                    <a class="{{loop.cycle('odd', 'even')}}" href="simple/{{package}}">
-                        <strong>{{package}}</strong> (latest version: {{latest_version}})
-                </a>
-                {% endfor %}
-            </div>
         </div>
+        <div class="packages width" id="packages">
+            {% for package, latest_version in packages %}
+                <a class="package {{loop.cycle('odd', 'even')}}" href="simple/{{package}}" data-name="{{package}}">
+                    <strong>{{package}}</strong> (latest version: {{latest_version}})
+                </a>
+            {% endfor %}
+        </div>
+
+        <script>
+            (function() {
+                function filter() {
+                    var words = search.value.toLowerCase().trim().split();
+                    var rows = document.getElementsByClassName('package');
+                    var odd = true;
+                    for (var i = 0; i < rows.length; i++) {
+                        var row = rows[i];
+                        var name = row.dataset.name;
+                        var ok = true;
+                        for (var j = 0; j < words.length; j++) {
+                            if (!name.toLowerCase().includes(words[j])) {
+                                ok = false;
+                                break;
+                            }
+                        }
+                        if (ok) {
+                            row.style.backgroundColor = odd ? '#fefefe' : '#f8f8f8';
+                            odd = !odd;
+                        }
+                        row.style.display = ok ? 'block' : 'none';
+                    }
+                }
+
+                var search = document.getElementById('search');
+                search.oninput = filter;
+                search.onpropertychange = filter;
+            })();
+        </script>
     </body>
 </html>

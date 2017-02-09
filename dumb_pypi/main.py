@@ -1,11 +1,13 @@
 """A simple read-only PyPI static index server generator."""
 import argparse
 import collections
+import contextlib
 import operator
 import os
 import os.path
 import re
 import sys
+import tempfile
 from datetime import datetime
 
 import jinja2
@@ -27,15 +29,15 @@ def remove_extension(name):
     return name
 
 
-def guess_name_version_from_filename(name):
-    if name.endswith('.whl'):
-        wheel = Wheel(name)
+def guess_name_version_from_filename(filename):
+    if filename.endswith('.whl'):
+        wheel = Wheel(filename)
         return wheel.name, wheel.version
     else:
         # These don't have a well-defined format like wheels do, so they are
         # sort of "best effort", with lots of tests to back them up.
         # The most important thing is to correctly parse the name.
-        name = remove_extension(name)
+        name = remove_extension(filename)
         version = None
 
         if '-' in name:
@@ -43,12 +45,18 @@ def guess_name_version_from_filename(name):
                 name, version = name.split('-')
             else:
                 parts = name.split('-')
-                for i in range(len(parts) - 1, -1, -1):
+                for i in range(len(parts) - 1, 0, -1):
                     part = parts[i]
                     if '.' in part and re.search('[0-9]', part):
                         name, version = '-'.join(parts[0:i]), '-'.join(parts[i:])
 
-        assert len(name) > 0, (name, version)
+        # possible with poorly-named files
+        if len(name) <= 0:
+            raise ValueError('Invalid package name: {}'.format(filename))
+
+        # impossible
+        assert version is None or len(version) > 0, version
+
         return name, version
 
 
@@ -71,7 +79,7 @@ class Package(collections.namedtuple('Package', (
         return tuple(packaging.version.parse(part) for part in name.split('-'))
 
     @classmethod
-    def from_name(cls, filename, base_url):
+    def from_filename(cls, filename, base_url):
         if not re.match('[a-zA-Z0-9_\-\.]+$', filename) or '..' in filename:
             raise ValueError('Unsafe package name: {}'.format(filename))
 
@@ -84,11 +92,31 @@ class Package(collections.namedtuple('Package', (
         )
 
 
+@contextlib.contextmanager
+def atomic_write(path):
+    tmp = tempfile.mktemp(
+        prefix='.' + os.path.basename(path),
+        dir=os.path.dirname(path),
+    )
+    try:
+        with open(tmp, 'w') as f:
+            yield f
+    except:
+        os.remove(tmp)
+        raise
+    else:
+        os.rename(tmp, path)
+
+
 def build_repo(package_names, output_path, packages_url, title):
     packages = collections.defaultdict(set)
     for filename in package_names:
-        package = Package.from_name(filename, packages_url)
-        packages[package.name].add(package)
+        try:
+            package = Package.from_filename(filename, packages_url)
+        except ValueError as ex:
+            print('{} (skipping package)'.format(ex), file=sys.stderr)
+        else:
+            packages[package.name].add(package)
 
     simple = os.path.join(output_path, 'simple')
     os.makedirs(simple, exist_ok=True)
@@ -96,7 +124,7 @@ def build_repo(package_names, output_path, packages_url, title):
     current_date = datetime.now().isoformat()
 
     # /index.html
-    with open(os.path.join(output_path, 'index.html'), 'w') as f:
+    with atomic_write(os.path.join(output_path, 'index.html')) as f:
         f.write(jinja_env.get_template('index.html').render(
             title=title,
             packages=sorted(
@@ -109,7 +137,7 @@ def build_repo(package_names, output_path, packages_url, title):
         ))
 
     # /simple/index.html
-    with open(os.path.join(simple, 'index.html'), 'w') as f:
+    with atomic_write(os.path.join(simple, 'index.html')) as f:
         f.write(jinja_env.get_template('simple.html').render(
             date=current_date,
             package_names=sorted(packages),
@@ -120,7 +148,7 @@ def build_repo(package_names, output_path, packages_url, title):
         os.makedirs(package_dir, exist_ok=True)
 
         # /simple/{package}/index.html
-        with open(os.path.join(package_dir, 'index.html'), 'w') as f:
+        with atomic_write(os.path.join(package_dir, 'index.html')) as f:
             f.write(jinja_env.get_template('package.html').render(
                 date=current_date,
                 package_name=package_name,

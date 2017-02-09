@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+num="$1"
+
+curl -s https://pypi.python.org/simple/ |
+    grep -Eo "'>.+?</a>" |
+    awk -F '<|>' '{print $2}' |
+    sort -R |
+    head -n "$num"
