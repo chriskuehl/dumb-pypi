@@ -13,6 +13,7 @@ from datetime import datetime
 import jinja2
 import packaging.utils
 import packaging.version
+import pkg_resources
 from pip.wheel import Wheel
 
 
@@ -69,14 +70,25 @@ class Package(collections.namedtuple('Package', (
 
     __slots__ = ()
 
+    def __lt__(self, other):
+        assert isinstance(other, Package), type(other)
+        return self.sort_key < other.sort_key
+
     @property
     def sort_key(self):
-        """Sort key for a filename.
+        """Sort key for a filename."""
+        return (
+            self.name,
+            pkg_resources.parse_version(self.version or '0'),
 
-        Based on pkg_resources._by_version_descending.
-        """
-        name = remove_extension(self.filename)
-        return tuple(packaging.version.parse(part) for part in name.split('-'))
+            # This looks ridiculous, but it's so that like extensions sort
+            # together when the name and version are the same (otherwise it
+            # depends on how the filename is normalized, which means sometimes
+            # wheels sort before tarballs, but not always).
+            # Alternatively we could just grab the extension, but that's less
+            # amusing, even though it took 6 lines of comments to explain this.
+            self.filename[::-1],
+        )
 
     @classmethod
     def from_filename(cls, filename, base_url):
@@ -130,7 +142,7 @@ def build_repo(package_names, output_path, packages_url, title):
             packages=sorted(
                 (
                     package,
-                    sorted(packages[package], key=operator.attrgetter('sort_key'))[0].version
+                    sorted(packages[package])[-1].version,
                 )
                 for package in packages
             )

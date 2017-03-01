@@ -124,3 +124,42 @@ def test_atomic_write_exception(tmpdir):
             f.flush()
             raise ValueError('sorry buddy')
     assert a.read() == 'sup'
+
+
+def test_sorting():
+    test_packages = [
+        main.Package.from_filename(name, '../../pool/')
+        for name in (
+            'fluffy-server-1.2.0.tar.gz',
+            'fluffy_server-1.1.0-py2.py3-none-any.whl',
+            'wsgi-mod-rpaf-2.0.0.tar.gz',
+            'fluffy-server-10.0.0.tar.gz',
+            'aspy.yaml-0.2.1.tar.gz',
+            'wsgi-mod-rpaf-1.0.1.tar.gz',
+            'aspy.yaml-0.2.1-py3-none-any.whl',
+            'fluffy-server-1.0.0.tar.gz',
+            'aspy.yaml-0.2.0-py2-none-any.whl',
+            'fluffy_server-10.0.0-py2.py3-none-any.whl',
+            'aspy.yaml-0.2.1-py2-none-any.whl',
+            'fluffy-server-1.1.0.tar.gz',
+            'fluffy_server-1.0.0-py2.py3-none-any.whl',
+            'fluffy_server-1.2.0-py2.py3-none-any.whl',
+        )
+    ]
+    sorted_names = [package.filename for package in sorted(test_packages)]
+    assert sorted_names == [
+        'aspy.yaml-0.2.0-py2-none-any.whl',
+        'aspy.yaml-0.2.1-py2-none-any.whl',
+        'aspy.yaml-0.2.1-py3-none-any.whl',
+        'aspy.yaml-0.2.1.tar.gz',
+        'fluffy_server-1.0.0-py2.py3-none-any.whl',
+        'fluffy-server-1.0.0.tar.gz',
+        'fluffy_server-1.1.0-py2.py3-none-any.whl',
+        'fluffy-server-1.1.0.tar.gz',
+        'fluffy_server-1.2.0-py2.py3-none-any.whl',
+        'fluffy-server-1.2.0.tar.gz',
+        'fluffy_server-10.0.0-py2.py3-none-any.whl',
+        'fluffy-server-10.0.0.tar.gz',
+        'wsgi-mod-rpaf-1.0.1.tar.gz',
+        'wsgi-mod-rpaf-2.0.0.tar.gz',
+    ]
