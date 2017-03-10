@@ -44,11 +44,6 @@ For more about why this design was chosen, see the detailed
 [`RATIONALE.md`][rationale] in this repo.
 
 
-## Things left to do
-
-* It should have a slightly nicer HTML interface for humans to search from.
-
-
 ## Usage
 
 There are two main components:
