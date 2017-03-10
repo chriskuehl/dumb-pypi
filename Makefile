@@ -12,6 +12,11 @@ test: venv
 	venv/bin/pre-commit install -f --install-hooks
 	venv/bin/pre-commit run --all-files
 
+.PHONY: release
+release: venv
+	venv/bin/python setup.py sdist bdist_wheel
+	venv/bin/twine upload --skip-existing dist/*
+
 .PHONY: test-repo
 test-repo: venv
 	venv/bin/dumb-pypi \
