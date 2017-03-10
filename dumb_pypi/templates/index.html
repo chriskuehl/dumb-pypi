@@ -151,8 +151,11 @@
 
         <script>
             (function() {
+                function normalize(str) {
+                    return str.toLowerCase().replace(/[._-]+/g, '-');
+                }
                 function filter() {
-                    var words = search.value.toLowerCase().trim().split();
+                    var words = normalize(search.value).trim().split();
                     var rows = document.getElementsByClassName('package');
                     var odd = true;
                     for (var i = 0; i < rows.length; i++) {
@@ -160,7 +163,7 @@
                         var name = row.dataset.name;
                         var ok = true;
                         for (var j = 0; j < words.length; j++) {
-                            if (!name.toLowerCase().includes(words[j])) {
+                            if (!normalize(name).includes(words[j])) {
                                 ok = false;
                                 break;
                             }
