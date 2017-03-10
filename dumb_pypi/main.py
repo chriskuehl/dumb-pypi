@@ -120,7 +120,9 @@ def atomic_write(path):
         os.rename(tmp, path)
 
 
-def build_repo(package_names, output_path, packages_url, title):
+# TODO: at some point there will be so many options we'll want to make a config
+# object or similar instead of adding more arguments here
+def build_repo(package_names, output_path, packages_url, title, logo, logo_width):
     packages = collections.defaultdict(set)
     for filename in package_names:
         try:
@@ -145,7 +147,9 @@ def build_repo(package_names, output_path, packages_url, title):
                     sorted(packages[package])[-1].version,
                 )
                 for package in packages
-            )
+            ),
+            logo=logo,
+            logo_width=logo_width,
         ))
 
     # /simple/index.html
@@ -190,6 +194,14 @@ def main(argv=None):
         '--title',
         help='site title (for web interface)', default='My Private PyPI',
     )
+    parser.add_argument(
+        '--logo',
+        help='URL for logo to display (defaults to no logo)',
+    )
+    parser.add_argument(
+        '--logo-width', type=int,
+        help='width of logo to display', default=0,
+    )
     args = parser.parse_args(argv)
 
     build_repo(
@@ -197,6 +209,8 @@ def main(argv=None):
         args.output_dir,
         args.packages_url,
         args.title,
+        args.logo,
+        args.logo_width,
     )
 
 

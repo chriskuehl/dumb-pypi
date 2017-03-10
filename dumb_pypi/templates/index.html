@@ -123,6 +123,14 @@
                 font-weight: bold;
             }
             .hide { display: none !important; }
+
+            {% if logo %}
+                .title h1 {
+                    padding-left: {{logo_width}}px;
+                    background-image: url('{{logo}}');
+                    background-repeat: no-repeat;
+                }
+            {% endif %}
         </style>
     </head>
 

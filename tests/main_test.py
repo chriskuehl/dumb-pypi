@@ -82,6 +82,8 @@ def test_build_repo_smoke_test(tmpdir):
         tmpdir.strpath,
         '../../pool/',
         'My Private PyPI',
+        None,
+        0,
     )
     assert tmpdir.join('simple').check(dir=True)
     assert tmpdir.join('simple', 'index.html').check(file=True)
@@ -100,6 +102,8 @@ def test_build_repo_even_with_bad_package_names(tmpdir):
         tmpdir.strpath,
         '../../pool/',
         'My Private PyPI',
+        None,
+        0,
     )
     assert tmpdir.join('simple').check(dir=True)
     assert tmpdir.join('simple', 'index.html').check(file=True)
