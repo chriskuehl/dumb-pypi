@@ -1,0 +1,14 @@
+language: python
+dist: trusty
+sudo: false
+install: pip install coveralls
+script: make test
+after_success:
+    - coveralls
+    - make push-github-pages
+cache:
+    directories:
+        - $HOME/.cache/pip
+        - $HOME/.cache/pip-faster
+        - $HOME/.cache/venv-update
+        - $HOME/.pre-commit
