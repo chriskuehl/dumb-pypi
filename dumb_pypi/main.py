@@ -53,7 +53,7 @@ def guess_name_version_from_filename(filename):
 
         # possible with poorly-named files
         if len(name) <= 0:
-            raise ValueError('Invalid package name: {}'.format(filename))
+            raise ValueError(f'Invalid package name: {filename}')
 
         # impossible
         assert version is None or len(version) > 0, version

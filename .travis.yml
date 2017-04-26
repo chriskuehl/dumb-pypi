@@ -3,6 +3,7 @@ dist: trusty
 sudo: false
 install: pip install coveralls
 script: make test
+python: '3.6'
 after_success:
     - coveralls
     - ci/push-github-pages
