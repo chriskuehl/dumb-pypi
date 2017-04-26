@@ -6,7 +6,7 @@ script: make test
 python: '3.6'
 after_success:
     - coveralls
-    - ci/push-github-pages
+    - make push-github-pages
 cache:
     directories:
         - $HOME/.cache/pip

@@ -25,3 +25,7 @@ test-repo: venv
 		--output-dir test-repo \
 		--logo https://i.fluffy.cc/tZRP1V8hdKCdrRQG5fBCv74M0VpcPLjP.svg \
 		--logo-width 42
+
+.PHONY: push-github-pages
+push-github-pages: venv test-repo
+	venv/bin/markdown-to-presentation push --source test-repo .
