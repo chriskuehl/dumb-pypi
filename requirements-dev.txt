@@ -1,6 +1,6 @@
 coverage
 ephemeral-port-reserve
-markdown-to-presentation>=0.0.13
+markdown-to-presentation
 pre-commit
 pytest
 requests
