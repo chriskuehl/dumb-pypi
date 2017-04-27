@@ -63,7 +63,8 @@ def tmpweb(running_server, tmpdir):
 
 
 def install_pip(version, path):
-    subprocess.check_call(('virtualenv', '-p', sys.executable, path.strpath))
+    # Old versions of pip don't work with python3.6.
+    subprocess.check_call(('virtualenv', '-p', 'python2.7', path.strpath))
 
     pip = path.join('bin', 'pip').strpath
     subprocess.check_call((pip, 'install', 'pip=={}'.format(version)))
