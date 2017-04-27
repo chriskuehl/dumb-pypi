@@ -28,4 +28,4 @@ test-repo: venv
 
 .PHONY: push-github-pages
 push-github-pages: venv test-repo
-	venv/bin/markdown-to-presentation push --source test-repo .
+	venv/bin/markdown-to-presentation push test-repo
