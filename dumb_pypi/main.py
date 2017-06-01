@@ -168,7 +168,12 @@ def build_repo(package_names, output_path, packages_url, title, logo, logo_width
             f.write(jinja_env.get_template('package.html').render(
                 date=current_date,
                 package_name=package_name,
-                versions=sorted(versions, key=operator.attrgetter('sort_key')),
+                versions=sorted(
+                    versions,
+                    key=operator.attrgetter('sort_key'),
+                    # Newer versions should sort first.
+                    reverse=True,
+                ),
             ))
 
 
