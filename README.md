@@ -151,4 +151,4 @@ To run the tests, call `make test`. To run an individual test, you can do
 
 
 [rationale]: https://github.com/chriskuehl/dumb-pypi/blob/master/RATIONALE.md
-[pep503]: https://www.python.org/dev/peps/pep-0503/
+[pep503]: https://www.python.org/dev/peps/pep-0503/#normalized-names
