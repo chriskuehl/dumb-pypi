@@ -1,5 +1,6 @@
+repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks.git
-    sha: v0.7.0
+    sha: v0.9.5
     hooks:
     -   id: autopep8-wrapper
         language_version: python3.6
@@ -22,12 +23,12 @@
     -   id: trailing-whitespace
         language_version: python3.6
 -   repo: https://github.com/asottile/reorder_python_imports.git
-    sha: v0.3.1
+    sha: v0.3.5
     hooks:
     -   id: reorder-python-imports
         language_version: python3.6
 -   repo: https://github.com/asottile/pyupgrade
-    sha: v1.0.6
+    sha: v1.2.0
     hooks:
     -   id: pyupgrade
         language_version: python3.6
