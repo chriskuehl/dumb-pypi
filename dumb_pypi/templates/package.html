@@ -5,10 +5,11 @@
     </head>
     <body>
         <h1>{{package_name}}</h1>
+        {% if versions %}<p>Latest version: {{(versions|first).version}}{% endif %}</p>
         <p>Generated on {{date}}.</p>
         <ul>
             {% for version in versions %}
-                <li><a href="{{version.url}}">{{version.filename}}</a></li>
+                <li><a href="{{version.url}}">{{version.filename}}</a> ({{version.version}})</li>
             {% endfor %}
         </ul>
     </body>
