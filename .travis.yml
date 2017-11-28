@@ -12,4 +12,4 @@ cache:
         - $HOME/.cache/pip
         - $HOME/.cache/pip-faster
         - $HOME/.cache/venv-update
-        - $HOME/.pre-commit
+        - $HOME/.cache/pre-commit
