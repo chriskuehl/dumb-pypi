@@ -113,7 +113,7 @@ def atomic_write(path):
     try:
         with open(tmp, 'w') as f:
             yield f
-    except Exception:
+    except BaseException:
         os.remove(tmp)
         raise
     else:
