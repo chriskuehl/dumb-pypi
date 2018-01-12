@@ -20,7 +20,7 @@ release: venv
 .PHONY: test-repo
 test-repo: venv
 	venv/bin/dumb-pypi \
-		--package-list testing/package-list \
+		--package-list-json testing/package-list-json \
 		--packages-url http://just.an.example/ \
 		--output-dir test-repo \
 		--logo https://i.fluffy.cc/tZRP1V8hdKCdrRQG5fBCv74M0VpcPLjP.svg \

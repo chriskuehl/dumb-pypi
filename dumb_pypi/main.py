@@ -2,6 +2,7 @@
 import argparse
 import collections
 import contextlib
+import json
 import operator
 import os
 import os.path
@@ -65,7 +66,9 @@ class Package(collections.namedtuple('Package', (
     'filename',
     'name',
     'version',
-    'url',
+    'hash',
+    'upload_timestamp',
+    'uploaded_by',
 ))):
 
     __slots__ = ()
@@ -90,8 +93,37 @@ class Package(collections.namedtuple('Package', (
             self.filename[::-1],
         )
 
+    @property
+    def formatted_upload_time(self):
+        return _format_datetime(datetime.fromtimestamp(self.upload_timestamp))
+
+    @property
+    def info_string(self):
+        # TODO: I'd like to remove this "info string" and instead format things
+        # nicely for humans (e.g. in a table or something).
+        #
+        # This might mean changing the web interface to use different pages for
+        # humans than the /simple/ ones it currently links to. (Even if pip can
+        # parse links from a <table>, it might add significantly more bytes.)
+        info = self.version or 'unknown version'
+        if self.upload_timestamp is not None:
+            info += f', {self.formatted_upload_time}'
+        if self.uploaded_by is not None:
+            info += f', {self.uploaded_by}'
+        return info
+
+    def url(self, base_url):
+        return f'{base_url.rstrip("/")}/{self.filename}'
+
     @classmethod
-    def from_filename(cls, filename, base_url):
+    def create(
+            cls,
+            *,
+            filename,
+            hash=None,
+            upload_timestamp=None,
+            uploaded_by=None,
+    ):
         if not re.match('[a-zA-Z0-9_\-\.]+$', filename) or '..' in filename:
             raise ValueError('Unsafe package name: {}'.format(filename))
 
@@ -100,7 +132,9 @@ class Package(collections.namedtuple('Package', (
             filename=filename,
             name=packaging.utils.canonicalize_name(name),
             version=version,
-            url=base_url.rstrip('/') + '/' + filename,
+            hash=hash,
+            upload_timestamp=upload_timestamp,
+            uploaded_by=uploaded_by,
         )
 
 
@@ -120,22 +154,17 @@ def atomic_write(path):
         os.rename(tmp, path)
 
 
+def _format_datetime(dt):
+    return dt.strftime('%Y-%m-%d %H:%M:%S')
+
+
 # TODO: at some point there will be so many options we'll want to make a config
 # object or similar instead of adding more arguments here
-def build_repo(package_names, output_path, packages_url, title, logo, logo_width):
-    packages = collections.defaultdict(set)
-    for filename in package_names:
-        try:
-            package = Package.from_filename(filename, packages_url)
-        except ValueError as ex:
-            print('{} (skipping package)'.format(ex), file=sys.stderr)
-        else:
-            packages[package.name].add(package)
-
+def build_repo(packages, output_path, packages_url, title, logo, logo_width):
     simple = os.path.join(output_path, 'simple')
     os.makedirs(simple, exist_ok=True)
 
-    current_date = datetime.now().isoformat()
+    current_date = _format_datetime(datetime.now())
 
     # /index.html
     with atomic_write(os.path.join(output_path, 'index.html')) as f:
@@ -174,20 +203,54 @@ def build_repo(package_names, output_path, packages_url, title, logo, logo_width
                     # Newer versions should sort first.
                     reverse=True,
                 ),
+                packages_url=packages_url,
             ))
 
 
-def package_list(path):
+def _lines_from_path(path):
     f = sys.stdin if path == '-' else open(path)
-    return frozenset(f.read().splitlines())
+    return f.read().splitlines()
+
+
+def _create_packages(package_infos):
+    packages = collections.defaultdict(set)
+    for package_info in package_infos:
+        try:
+            package = Package.create(**package_info)
+        except ValueError as ex:
+            # TODO: this should really be optional; i'd prefer it to fail hard
+            print('{} (skipping package)'.format(ex), file=sys.stderr)
+        else:
+            packages[package.name].add(Package.create(**package_info))
+
+    return packages
+
+
+def package_list(path):
+    return _create_packages({'filename': line} for line in _lines_from_path(path))
+
+
+def package_list_json(path):
+    return _create_packages(json.loads(line) for line in _lines_from_path(path))
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        '--package-list', help='path to a list of packages (one per line)',
-        type=package_list, required=True,
+
+    package_input_group = parser.add_mutually_exclusive_group(required=True)
+    package_input_group.add_argument(
+        '--package-list',
+        help='path to a list of packages (one per line)',
+        type=package_list,
+        dest='packages',
     )
+    package_input_group.add_argument(
+        '--package-list-json',
+        help='path to a list of packages (one JSON object per line)',
+        type=package_list_json,
+        dest='packages',
+    )
+
     parser.add_argument(
         '--output-dir', help='path to output to', required=True,
     )
@@ -210,7 +273,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     build_repo(
-        args.package_list,
+        args.packages,
         args.output_dir,
         args.packages_url,
         args.title,

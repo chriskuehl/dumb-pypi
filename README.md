@@ -46,15 +46,15 @@ For more about why this design was chosen, see the detailed
 
 ## Usage
 
-There are two main components:
+To use dumb-pypi, you need two things:
 
-* A script which generates the index.
+* A script which generates the index. (That's this project!)
 
 * A generic webserver to serve the generated index.
 
-It's up to you how to deploy these. For example, you might sync the built index
-into an S3 bucket, and serve it directly from S3. You might run nginx from the
-built index locally.
+  This part is up to you. For example, you might sync the built index into an
+  S3 bucket, and serve it directly from S3. You might run nginx from the built
+  index locally.
 
 My recommended high-availability (but still quite simple) deployment is:
 
@@ -99,6 +99,28 @@ $ dumb-pypi \
 
 The built index will be in `my-built-index`. It's now up to you to figure out
 how to serve that with a webserver (nginx is a good option — details below!).
+
+
+#### Additional options for packages
+
+You can extend the capabilities of your registry using the extended JSON input
+syntax when providing your package list to dumb-pypi. Instead of using the
+format listed above of one filename per line, format your file with one JSON
+object per line, like this:
+
+```json
+{"filename": "dumb-init-1.1.2.tar.gz", "hash": "md5=<hash>", "uploaded_by": "ckuehl", "upload_timestamp": 1512539924}
+```
+
+The `filename` key is required. All other keys are optional and will be used to
+provide additional information in your generated repository. This extended
+information can be useful to determine, for example, who uploaded a package.
+(Most of this information is useful in the web UI by humans, not by pip.)
+
+Where should you get information about the hash, uploader, etc? That's up to
+you—dumb-pypi isn't in the business of storing or calculating this data. If
+you're using S3, one easy option is to store it at upload time as [S3
+metadata][s3-metadata].
 
 
 ### Recommended nginx config
@@ -152,3 +174,4 @@ To run the tests, call `make test`. To run an individual test, you can do
 
 [rationale]: https://github.com/chriskuehl/dumb-pypi/blob/master/RATIONALE.md
 [pep503]: https://www.python.org/dev/peps/pep-0503/#normalized-names
+[s3-metadata]: https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html#UserMetadata

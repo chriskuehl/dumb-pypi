@@ -9,7 +9,7 @@
         <p>Generated on {{date}}.</p>
         <ul>
             {% for version in versions %}
-                <li><a href="{{version.url}}">{{version.filename}}</a> ({{version.version}})</li>
+                <li><a href="{{version.url(packages_url)}}">{{version.filename}}</a> ({{version.info_string}})</li>
             {% endfor %}
         </ul>
     </body>
