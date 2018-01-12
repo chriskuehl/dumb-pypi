@@ -1,0 +1,60 @@
+#!/usr/bin/env python3.6
+import random
+import json
+import hashlib
+
+
+RANDOM_USERS = '''root
+daemon
+bin
+sys
+sync
+games
+man
+lp
+mail
+news
+uucp
+proxy
+www-data
+backup
+list
+irc
+gnats
+nobody
+systemd-timesync
+systemd-network
+systemd-resolve
+systemd-bus-proxy
+Debian-exim
+messagebus
+statd
+sshd
+ckuehl
+puppet
+_apt
+dnsmasq
+libvirt-qemu
+control
+rtkit
+usbmux
+pulse
+lightdm
+postfix
+'''.splitlines()
+
+
+with open('package-list') as f:
+    lines = f.read().splitlines()
+
+
+for line in lines:
+    random_hash = hashlib.md5(str(random.randint(0, 1000000000000)).encode()).hexdigest()
+    random_timestamp = random.randint(1000000000, 1515641096)
+    obj = {
+        'filename': line,
+        'hash': f'md5={random_hash}',
+        'uploaded_by': random.choice(RANDOM_USERS),
+        'upload_timestamp': random_timestamp,
+    }
+    print(json.dumps(obj, sort_keys=True))

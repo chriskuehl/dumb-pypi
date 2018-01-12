@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from dumb_pypi import main
@@ -73,18 +75,47 @@ def test_guess_name_version_from_filename_invalid(filename):
 ))
 def test_package_invalid(filename):
     with pytest.raises(ValueError):
-        main.Package.from_filename(filename, '../../pool/')
+        main.Package.create(filename=filename)
 
 
 def test_build_repo_smoke_test(tmpdir):
-    main.build_repo(
-        frozenset(('ocflib-2016.12.10.1.48-py2.py3-none-any.whl',)),
-        tmpdir.strpath,
-        '../../pool/',
-        'My Private PyPI',
-        None,
-        0,
-    )
+    package_list = tmpdir.join('package-list')
+    package_list.write('ocflib-2016.12.10.1.48-py2.py3-none-any.whl\n')
+    main.main((
+        '--package-list', package_list.strpath,
+        '--output-dir', tmpdir.strpath,
+        '--packages-url', '../../pool/',
+    ))
+    assert tmpdir.join('simple').check(dir=True)
+    assert tmpdir.join('simple', 'index.html').check(file=True)
+    assert tmpdir.join('simple', 'ocflib').check(dir=True)
+    assert tmpdir.join('simple', 'ocflib', 'index.html').check(file=True)
+
+
+def test_build_repo_json_smoke_test(tmpdir):
+    package_list = tmpdir.join('package-list')
+    package_list.write('\n'.join((
+        json.dumps(info) for info in (
+            {
+                'filename': 'ocflib-2016.12.10.1.48-py2.py3-none-any.whl',
+                'uploaded_by': 'ckuehl',
+                'upload_timestamp': 1515783971,
+                'hash': 'md5-b1946ac92492d2347c6235b4d2611184',
+            },
+            {
+                'filename': 'numpy-1.11.0rc1.tar.gz',
+                'upload_timestamp': 1515783971,
+            },
+            {
+                'filename': 'scikit-learn-0.15.1.tar.gz',
+            },
+        )
+    )) + '\n')
+    main.main((
+        '--package-list-json', package_list.strpath,
+        '--output-dir', tmpdir.strpath,
+        '--packages-url', '../../pool/',
+    ))
     assert tmpdir.join('simple').check(dir=True)
     assert tmpdir.join('simple', 'index.html').check(file=True)
     assert tmpdir.join('simple', 'ocflib').check(dir=True)
@@ -92,19 +123,19 @@ def test_build_repo_smoke_test(tmpdir):
 
 
 def test_build_repo_even_with_bad_package_names(tmpdir):
-    main.build_repo(
-        frozenset((
-            '..',
-            '/blah-2.tar.gz',
-            'lol-2.tar.gz/../',
-            'ocflib-2016.12.10.1.48-py2.py3-none-any.whl',
-        )),
-        tmpdir.strpath,
-        '../../pool/',
-        'My Private PyPI',
-        None,
-        0,
-    )
+    package_list = tmpdir.join('package-list')
+    package_list.write('\n'.join((
+        '..',
+        '/blah-2.tar.gz',
+        'lol-2.tar.gz/../',
+        'ocflib-2016.12.10.1.48-py2.py3-none-any.whl',
+        '',
+    )))
+    main.main((
+        '--package-list', package_list.strpath,
+        '--output-dir', tmpdir.strpath,
+        '--packages-url', '../../pool/',
+    ))
     assert tmpdir.join('simple').check(dir=True)
     assert tmpdir.join('simple', 'index.html').check(file=True)
     assert tmpdir.join('simple', 'ocflib').check(dir=True)
@@ -132,7 +163,7 @@ def test_atomic_write_exception(tmpdir):
 
 def test_sorting():
     test_packages = [
-        main.Package.from_filename(name, '../../pool/')
+        main.Package.create(filename=name)
         for name in (
             'fluffy-server-1.2.0.tar.gz',
             'fluffy_server-1.1.0-py2.py3-none-any.whl',
