@@ -186,6 +186,7 @@
 
                 var search = document.getElementById('search');
                 search.oninput = filter;
+                search.onpaste = filter;
                 search.onpropertychange = filter;
             })();
         </script>
