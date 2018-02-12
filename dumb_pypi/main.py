@@ -297,8 +297,8 @@ def build_repo(packages, output_path, packages_url, title, logo, logo_width):
         if not nodes.get(package_name, None):
             nodes[package_name] = []
         for dep in deps:
-            if not nodes.get(dep, None):
-                nodes[dep] = []
+            if not nodes.get(dep.lower(), None):
+                nodes[dep.lower()] = []
             nodes[package_name].append(dep.lower())
         # /simple/{package}/index.html
         with atomic_write(os.path.join(package_dir, 'index.html')) as f:
