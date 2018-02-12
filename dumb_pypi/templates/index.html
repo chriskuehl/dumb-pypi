@@ -50,11 +50,14 @@
             {% for package, latest_version in packages %}
                       <div class="row alert alert-primary" data-name="{{package}}">
                 <a href="simple/{{package}}/">
-                    <strong>{{package}}</strong> (latest version: {{latest_version}})
-                </a>
+                    {% set info = latest_version.update_info %}
+                    <strong>{{package}}</strong></a>
+                    {% if info|hasKey('summary') %}
+                        : {{ info['summary'][0] }} </p>
+                    {% endif %}
                       </div>
             {% endfor %}
-          <a href="/deps.png"><img src="/deps.png" style="width: 100%" /></a>
+          <a href="deps.png"><img src="deps.png" style="width: 100%" /></a>
         </div>
 
         <script>

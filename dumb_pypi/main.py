@@ -270,7 +270,7 @@ def build_repo(packages, output_path, packages_url, title, logo, logo_width):
             packages=sorted(
                 (
                     package,
-                    sorted(packages[package])[-1].version,
+                    sorted(packages[package])[-1],
                 )
                 for package in packages
             ),
