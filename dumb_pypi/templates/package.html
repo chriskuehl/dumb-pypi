@@ -1,16 +1,89 @@
 <!doctype html>
-<html>
-    <head>
-        <title>{{package_name}}</title>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link href="https://framework.web.cern.ch/framework/2.0/cern_toolbar/css/toolbar.css" rel="stylesheet" type="text/css" media="screen" />
+      <title>{{package_name}}</title>
     </head>
+
     <body>
-        <h1>{{package_name}}</h1>
-        {% if versions %}<p>Latest version: {{(versions|first).version}}{% endif %}</p>
-        <p>Generated on {{date}}.</p>
-        <ul>
+
+  <div id="cern-toolbar">
+    <h1>
+      <a href="http://cern.ch" title="CERN">
+        CERN <span>Accelerating science</span>
+      </a>
+    </h1>
+    <ul>
+      <li>
+        <a class="cern-directory" href="http://cern.ch/directory" title="Search CERN resources and browse the directory">
+          Directory
+        </a>
+      </li>
+    </ul>
+  </div>
+
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron" id="banner">
+      <div class="overlayer">
+        <div class="container">
+            <h1>{{package_name}}</h1>
+            {% if versions %}<p class="alert alert-success">Latest version: {{(versions|first).version}}</p>{% endif %}
+            <p class="alert alert-success">Generated on {{date}}.</p>
+            {% set info = (versions|first).update_info %}
+            {% if info|hasKey('home_page') %}
+            <p class="alert alert-success">Homepage: {{ info['home_page'][0] | linkParser | safe }} </p>
+            {% endif %}
+            {% if info|hasKey('summary') %}
+            <p class="alert alert-success">Summary: {{ info['summary'][0] }} </p>
+            {% endif %}
+            {% if info|hasKey('keywords') %}
+            <p class="alert alert-success">Keywords: {{ info['keywords'][0] }}  </p>
+            {% endif %}
+            {% if info|hasKey('author') %}
+            <p class="alert alert-success">Author: {{ info['author'][0] }} ({{ info['author'][0]|emailParser|safe }})</p>
+            {% endif %}
+            {% if info|hasKey('description') %}
+            <p class="alert alert-success">Description: {{ info['description'][0] }}  </p>
+            {% endif %}
+            {% if info|hasKey('platform') %}
+            <p class="alert alert-success">Platform: {{ info['platform'][0] }}  </p>
+            {% endif %}
+            {% if info|hasKey('license') %}
+            <p class="alert alert-success">Licence: {{ info['license'][0] }} </p>
+            {% endif %}
+            {% if info|hasKey('classifier') %}
+            <p class="alert alert-success">Classifiers:<br/>
+
+                {% for classifier in info['classifier'] %}
+                    <span>&nbsp;&nbsp;&nbsp;</span>{{ classifier }}<br/>
+                {% endfor %}
+            </p>
+            {% endif %}
+            {% if info|hasKey('dependencies') %}
+            <p class="alert alert-success">Dependencies:<br/>
+                {% for dep in info['dependencies'] %}
+                    <span>&nbsp;&nbsp;&nbsp;</span>{{ dep | dependencyParser | safe}}<br/>
+                {% endfor %}
+            </p>
+            {% endif %}
+        </div>
+      </div>
+    </div>
+      <div class="container">
             {% for version in versions %}
-                <li><a href="{{version.url(packages_url)}}">{{version.filename}}</a> ({{version.info_string}})</li>
+                <div class="row alert alert-primary">
+                <a href="{{version.url(packages_url)}}">{{version.filename}}</a> ({{version.info_string}})
+                </div>
             {% endfor %}
-        </ul>
+      </div>
     </body>
 </html>

@@ -11,6 +11,7 @@ setup(
     install_requires=(
         'jinja2',
         'packaging',
+        'graphviz'
     ),
     classifiers=(
         'Programming Language :: Python :: 3',

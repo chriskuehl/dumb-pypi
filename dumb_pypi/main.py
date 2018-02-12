@@ -10,12 +10,16 @@ import re
 import sys
 import tempfile
 from datetime import datetime
-
+import hashlib
 import jinja2
 import packaging.utils
 import packaging.version
 import pkg_resources
 from pip.wheel import Wheel
+import tarfile
+from zipfile import ZipFile
+from graphviz import Digraph
+import subprocess
 
 
 jinja_env = jinja2.Environment(
@@ -23,6 +27,30 @@ jinja_env = jinja2.Environment(
     autoescape=True,
 )
 
+def emailParser(input):
+    return_value = []
+    users = input.split(',')
+    for user in users:
+        return_value.append('<a href="mailto:%s">%s</a>' % (user, user))
+    return ', '.join(return_value)
+
+def dependencyParser(input):
+    if input in local_projects:
+        link = '/simple/%s' % input
+    else:
+        link = 'https://pypi.python.org/pypi/%s' % input
+    return '<a href="%s">%s</a>' % (link, input)
+
+def linkParser(input):
+    return '<a href="%s">%s</a>' % (input, input)
+
+def hasKey(input, key):
+    return input.get(key, None) is not None
+
+jinja_env.filters['emailParser'] = emailParser
+jinja_env.filters['linkParser'] = linkParser
+jinja_env.filters['hasKey'] = hasKey
+jinja_env.filters['dependencyParser'] = dependencyParser
 
 def remove_extension(name):
     if name.endswith(('gz', 'bz2')):
@@ -30,6 +58,12 @@ def remove_extension(name):
     name, _ = name.rsplit('.', 1)
     return name
 
+def md5(fname):
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
 
 def guess_name_version_from_filename(filename):
     if filename.endswith('.whl'):
@@ -62,13 +96,18 @@ def guess_name_version_from_filename(filename):
         return name, version
 
 
+local_projects = set()
+
+
 class Package(collections.namedtuple('Package', (
     'filename',
     'name',
+    'original_source_path',
+    'path',
     'version',
     'hash',
     'upload_timestamp',
-    'uploaded_by',
+    'uploaded_by'
 ))):
 
     __slots__ = ()
@@ -113,28 +152,85 @@ class Package(collections.namedtuple('Package', (
         return info
 
     def url(self, base_url):
-        return f'{base_url.rstrip("/")}/{self.filename}'
+        return f'{base_url.rstrip("/")}/{self.path}'
+
+    def _get_metadata(self, path):
+        return_info = {}
+        with open(os.path.join(path), 'r') as f:
+            for line in f.readlines():
+                line = line.strip('\n')
+                attribute = line.split(':')[0]
+                value = line.replace(attribute + ':', '').strip()
+                attribute = attribute.replace('-', '_').lower()
+                if not return_info.get(attribute, None):
+                    return_info[attribute] = []
+                return_info[attribute].append(value)
+        return return_info
+
+
+    @property
+    def update_info(self):
+        return_info = {}
+        deps = []
+        info_found = False
+        if not self.original_source_path:
+            return
+        if not os.path.exists(self.original_source_path):
+            return
+        tmp = tempfile.mktemp()
+        if self.original_source_path.endswith('.whl'):
+            zipFile = ZipFile(self.original_source_path)
+            for member in zipFile.namelist():
+                if member.endswith('METADATA'):
+                    zipFile.extract(member, tmp)
+                    return_info = self._get_metadata(os.path.join(tmp, member))
+                if 'metadata.json' in member:
+                    zipFile.extract(member, tmp)
+                    with open(os.path.join(tmp, member), 'r') as f:
+                        row_data = json.loads(f.read())
+                        deps = row_data['run_requires'][0].get('requires',[])
+        else:
+            tar = tarfile.open(self.original_source_path)
+            for member in tar.getmembers():
+                if 'PKG-INFO' in member.name and not info_found: # PKG-INFO is also in the egg-info
+                    tar.extract(member, tmp)
+                    return_info = self._get_metadata(
+                            os.path.join(tmp, member.name))
+                    info_found = True
+                if 'requires' in member.name:
+                    tar.extract(member, tmp)
+                    with open(os.path.join(tmp, member.name), 'r') as f:
+                        for line in f.readlines():
+                            line = line.strip('\n')
+                            deps.append(line)
+        return_info['dependencies'] = deps
+        return return_info
 
     @classmethod
     def create(
             cls,
             *,
             filename,
+            path=None,
             hash=None,
             upload_timestamp=None,
             uploaded_by=None,
+            original_source_path=None
     ):
         if not re.match('[a-zA-Z0-9_\-\.]+$', filename) or '..' in filename:
             raise ValueError('Unsafe package name: {}'.format(filename))
 
         name, version = guess_name_version_from_filename(filename)
+        local_projects.add(name)
         return cls(
             filename=filename,
             name=packaging.utils.canonicalize_name(name),
             version=version,
+            path=path,
+            original_source_path=original_source_path,
             hash=hash,
             upload_timestamp=upload_timestamp,
-            uploaded_by=uploaded_by,
+            uploaded_by=uploaded_by
         )
 
 
@@ -163,7 +259,8 @@ def _format_datetime(dt):
 def build_repo(packages, output_path, packages_url, title, logo, logo_width):
     simple = os.path.join(output_path, 'simple')
     os.makedirs(simple, exist_ok=True)
-
+    dot = Digraph()
+    nodes = {}
     current_date = _format_datetime(datetime.now())
 
     # /index.html
@@ -187,25 +284,38 @@ def build_repo(packages, output_path, packages_url, title, logo, logo_width):
             date=current_date,
             package_names=sorted(packages),
         ))
-
     for package_name, versions in packages.items():
         package_dir = os.path.join(simple, package_name)
         os.makedirs(package_dir, exist_ok=True)
-
+        versions = sorted(
+                    versions,
+                    key=operator.attrgetter('sort_key'),
+                    # Newer versions should sort first.
+                    reverse=True,
+                )
+        deps = versions[0].update_info['dependencies']
+        if not nodes.get(package_name, None):
+            nodes[package_name] = []
+        for dep in deps:
+            if not nodes.get(dep, None):
+                nodes[dep] = []
+            nodes[package_name].append(dep)
         # /simple/{package}/index.html
         with atomic_write(os.path.join(package_dir, 'index.html')) as f:
             f.write(jinja_env.get_template('package.html').render(
                 date=current_date,
                 package_name=package_name,
-                versions=sorted(
-                    versions,
-                    key=operator.attrgetter('sort_key'),
-                    # Newer versions should sort first.
-                    reverse=True,
-                ),
+                versions=versions,
                 packages_url=packages_url,
             ))
-
+    for node in nodes.keys():
+        dot.node(node)
+        for link in nodes[node]:
+            dot.edge(node, link)
+    output_path_dot = '%s/deps.dot' % output_path
+    output_path_png = open('%s/deps.png' % output_path, 'w')
+    dot.save(output_path_dot)
+    subprocess.call(['dot','-Tpng', output_path_dot], stdout=output_path_png)
 
 def _lines_from_path(path):
     f = sys.stdin if path == '-' else open(path)
@@ -226,6 +336,26 @@ def _create_packages(package_infos):
     return packages
 
 
+def package_list_from_path(path):
+    if not path.endswith('/'):
+        path = path + '/'
+    files_name = []
+    for root, dirs, files in os.walk(path, topdown=False):
+        for name in files:
+            if os.path.isfile(os.path.join(root, name)) and name.endswith(
+                    ('tar.gz', 'tar.bz2', 'whl')):
+                files_name.append({
+                    'filename': name,
+                    'path': os.path.join(root.replace(path, ''), name),
+                })
+    return _create_packages({'filename': line['filename'],
+                             'hash': md5(os.path.join(path, line['path'])),
+                             'path': line['path'],
+                             'original_source_path':os.path.join(path,
+                                                                 line['path'])}
+                            for line in files_name)
+
+
 def package_list(path):
     return _create_packages({'filename': line} for line in _lines_from_path(path))
 
@@ -242,6 +372,12 @@ def main(argv=None):
         '--package-list',
         help='path to a list of packages (one per line)',
         type=package_list,
+        dest='packages',
+    )
+    package_input_group.add_argument(
+        '--package-path-folder',
+        help='path to folder of packages',
+        type=package_list_from_path,
         dest='packages',
     )
     package_input_group.add_argument(
