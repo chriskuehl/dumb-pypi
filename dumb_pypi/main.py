@@ -36,7 +36,7 @@ def emailParser(input):
 
 def dependencyParser(input):
     if input in local_projects:
-        link = '/simple/%s' % input
+        link = '../%s' % input
     else:
         link = 'https://pypi.python.org/pypi/%s' % input
     return '<a href="%s">%s</a>' % (link, input)
@@ -299,7 +299,7 @@ def build_repo(packages, output_path, packages_url, title, logo, logo_width):
         for dep in deps:
             if not nodes.get(dep, None):
                 nodes[dep] = []
-            nodes[package_name].append(dep)
+            nodes[package_name].append(dep.lower())
         # /simple/{package}/index.html
         with atomic_write(os.path.join(package_dir, 'index.html')) as f:
             f.write(jinja_env.get_template('package.html').render(
