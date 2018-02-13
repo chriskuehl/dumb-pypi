@@ -53,8 +53,8 @@
                     {% set info = latest_version.update_info %}
                     <strong>{{package}}</strong></a>
                     {% if info|hasKey('summary') %}
-                        : {{ info['summary'][0] }} </p>
-                    {% endif %} ({{latest_version.version}})
+                        : {{ info['summary'][0] }}
+                    {% endif %} &nbsp;(Latest version: {{latest_version.version}})
                       </div>
             {% endfor %}
           <a href="deps.png"><img src="deps.png" style="width: 100%" /></a>
