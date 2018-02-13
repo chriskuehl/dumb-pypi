@@ -54,7 +54,7 @@
                     <strong>{{package}}</strong></a>
                     {% if info|hasKey('summary') %}
                         : {{ info['summary'][0] }} </p>
-                    {% endif %}
+                    {% endif %} ({{latest_version.version}})
                       </div>
             {% endfor %}
           <a href="deps.png"><img src="deps.png" style="width: 100%" /></a>
