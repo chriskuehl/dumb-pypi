@@ -217,8 +217,10 @@ class Package(collections.namedtuple('Package', (
             uploaded_by=None,
             original_source_path=None
     ):
-        if not re.match('[a-zA-Z0-9_\-\.]+$', filename) or '..' in filename:
+        if not re.match('[a-zA-Z0-9_\-\.\+]+$', filename) or '..' in filename:
             raise ValueError('Unsafe package name: {}'.format(filename))
+
+
 
         name, version = guess_name_version_from_filename(filename)
         local_projects.add(name)
@@ -253,6 +255,10 @@ def atomic_write(path):
 def _format_datetime(dt):
     return dt.strftime('%Y-%m-%d %H:%M:%S')
 
+def _remove_tmp_files(path):
+    tmp_files = [f for f in os.listdir(path) if f.startswith('.index.html')]
+    for f in tmp_files:
+        os.remove(os.path.join(path, f))
 
 # TODO: at some point there will be so many options we'll want to make a config
 # object or similar instead of adding more arguments here
@@ -277,13 +283,14 @@ def build_repo(packages, output_path, packages_url, title, logo, logo_width):
             logo=logo,
             logo_width=logo_width,
         ))
-
+    _remove_tmp_files(output_path)
     # /simple/index.html
     with atomic_write(os.path.join(simple, 'index.html')) as f:
         f.write(jinja_env.get_template('simple.html').render(
             date=current_date,
             package_names=sorted(packages),
         ))
+    _remove_tmp_files(simple)
     for package_name, versions in packages.items():
         package_dir = os.path.join(simple, package_name)
         os.makedirs(package_dir, exist_ok=True)
@@ -308,6 +315,7 @@ def build_repo(packages, output_path, packages_url, title, logo, logo_width):
                 versions=versions,
                 packages_url=packages_url,
             ))
+        _remove_tmp_files(package_dir)
     for node in nodes.keys():
         dot.node(node)
         for link in nodes[node]:
