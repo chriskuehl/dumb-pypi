@@ -1,0 +1,8 @@
+{
+    "source-bucket": "dumb-pypi-source",
+    "output-bucket": "dumb-pypi-output",
+    "args": [
+        "--packages-url", "https://dumb-pypi-source.s3.amazonaws.com/",
+        "--title", "My Cool PyPI on S3"
+    ]
+}

@@ -58,11 +58,13 @@ To use dumb-pypi, you need two things:
 
 My recommended high-availability (but still quite simple) deployment is:
 
-* Store all of the packages in S3.
+* Store all of the packages in an S3 bucket.
 
 * Have a cronjob (or equivalent) which rebuilds the index based on the packages
   in S3. This is incredibly fast—it would not be unreasonable to do it every
   sixty seconds. After building the index, sync it into a separate S3 bucket.
+
+  (You can also use AWS Lambda for this step; [instructions here!][lambda])
 
 * Have a webserver (or set of webservers behind a load balancer) running nginx
   (with the config provided below), with the source being that second S3
@@ -172,6 +174,7 @@ To run the tests, call `make test`. To run an individual test, you can do
 `py.test -k name_of_test tests` (with the virtualenv activated).
 
 
+[lambda]: https://github.com/chriskuehl/dumb-pypi/blob/master/lambda/README.md
 [rationale]: https://github.com/chriskuehl/dumb-pypi/blob/master/RATIONALE.md
 [pep503]: https://www.python.org/dev/peps/pep-0503/#normalized-names
 [s3-metadata]: https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html#UserMetadata
