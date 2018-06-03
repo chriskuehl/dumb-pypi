@@ -14,8 +14,7 @@ from datetime import datetime
 import jinja2
 import packaging.utils
 import packaging.version
-import pkg_resources
-from pip.wheel import Wheel
+from distlib.wheel import Wheel
 
 
 jinja_env = jinja2.Environment(
@@ -82,7 +81,7 @@ class Package(collections.namedtuple('Package', (
         """Sort key for a filename."""
         return (
             self.name,
-            pkg_resources.parse_version(self.version or '0'),
+            packaging.version.parse(self.version or '0'),
 
             # This looks ridiculous, but it's so that like extensions sort
             # together when the name and version are the same (otherwise it

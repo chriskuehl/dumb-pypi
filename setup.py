@@ -9,6 +9,7 @@ setup(
     url='https://github.com/chriskuehl/dumb-pypi',
     packages=('dumb_pypi',),
     install_requires=(
+        'distlib',
         'jinja2',
         'packaging',
     ),

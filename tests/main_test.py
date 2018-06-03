@@ -7,7 +7,7 @@ from dumb_pypi import main
 
 @pytest.mark.parametrize(('filename', 'name', 'version'), (
     # wheels
-    ('dumb_init-1.2.0-py2.py3-none-manylinux1_x86_64.whl', 'dumb-init', '1.2.0'),
+    ('dumb_init-1.2.0-py2.py3-none-manylinux1_x86_64.whl', 'dumb_init', '1.2.0'),
     ('ocflib-2016.12.10.1.48-py2.py3-none-any.whl', 'ocflib', '2016.12.10.1.48'),
     ('aspy.yaml-0.2.2-py2.py3-none-any.whl', 'aspy.yaml', '0.2.2'),
     (
