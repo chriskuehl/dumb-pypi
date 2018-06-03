@@ -1,6 +1,6 @@
 *.py[co]
-/.cache
 /.coverage
+/.pytest_cache
 /build
 /dist
 /gh-pages
