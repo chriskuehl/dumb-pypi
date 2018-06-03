@@ -1,36 +1,30 @@
 exclude: ^vendor/
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks.git
-    sha: v0.9.5
+    rev: v1.3.0
     hooks:
     -   id: autopep8-wrapper
-        language_version: python3.6
     -   id: check-docstring-first
-        language_version: python3.6
     -   id: check-json
-        language_version: python3.6
     -   id: check-yaml
-        language_version: python3.6
     -   id: debug-statements
-        language_version: python3.6
     -   id: end-of-file-fixer
-        language_version: python3.6
     -   id: flake8
-        language_version: python3.6
     -   id: name-tests-test
-        language_version: python3.6
     -   id: requirements-txt-fixer
-        language_version: python3.6
     -   id: trailing-whitespace
-        language_version: python3.6
 -   repo: https://github.com/asottile/reorder_python_imports.git
-    sha: v0.3.5
+    rev: v1.0.1
     hooks:
     -   id: reorder-python-imports
-        language_version: python3.6
+        args: [--py3-plus]
 -   repo: https://github.com/asottile/pyupgrade
-    sha: v1.2.0
+    rev: v1.2.0
     hooks:
     -   id: pyupgrade
         language_version: python3.6
-        args: ['--py3-plus']
+        args: [--py3-plus]
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.600
+    hooks:
+    -   id: mypy

@@ -10,6 +10,17 @@ import re
 import sys
 import tempfile
 from datetime import datetime
+from typing import Any
+from typing import Dict
+from typing import Generator
+from typing import IO
+from typing import Iterator
+from typing import List
+from typing import NamedTuple
+from typing import Optional
+from typing import Sequence
+from typing import Set
+from typing import Tuple
 
 import distlib.wheel
 import jinja2
@@ -23,14 +34,16 @@ jinja_env = jinja2.Environment(
 )
 
 
-def remove_extension(name):
+def remove_extension(name: str) -> str:
     if name.endswith(('gz', 'bz2')):
         name, _ = name.rsplit('.', 1)
     name, _ = name.rsplit('.', 1)
     return name
 
 
-def guess_name_version_from_filename(filename):
+def guess_name_version_from_filename(
+        filename: str,
+) -> Tuple[str, Optional[str]]:
     if filename.endswith('.whl'):
         try:
             wheel = distlib.wheel.Wheel(filename)
@@ -65,23 +78,20 @@ def guess_name_version_from_filename(filename):
         return name, version
 
 
-class Package(collections.namedtuple('Package', (
-    'filename',
-    'name',
-    'version',
-    'hash',
-    'upload_timestamp',
-    'uploaded_by',
-))):
+class Package(NamedTuple):
+    filename: str
+    name: str
+    version: Optional[str]
+    hash: Optional[str]
+    upload_timestamp: Optional[int]
+    uploaded_by: Optional[str]
 
-    __slots__ = ()
-
-    def __lt__(self, other):
+    def __lt__(self, other: tuple) -> bool:
         assert isinstance(other, Package), type(other)
         return self.sort_key < other.sort_key
 
     @property
-    def sort_key(self):
+    def sort_key(self) -> Tuple[str, packaging.version.Version, str]:
         """Sort key for a filename."""
         return (
             self.name,
@@ -97,11 +107,12 @@ class Package(collections.namedtuple('Package', (
         )
 
     @property
-    def formatted_upload_time(self):
+    def formatted_upload_time(self) -> str:
+        assert self.upload_timestamp is not None
         return _format_datetime(datetime.fromtimestamp(self.upload_timestamp))
 
     @property
-    def info_string(self):
+    def info_string(self) -> str:
         # TODO: I'd like to remove this "info string" and instead format things
         # nicely for humans (e.g. in a table or something).
         #
@@ -115,18 +126,18 @@ class Package(collections.namedtuple('Package', (
             info += f', {self.uploaded_by}'
         return info
 
-    def url(self, base_url):
+    def url(self, base_url: str) -> str:
         return f'{base_url.rstrip("/")}/{self.filename}'
 
     @classmethod
     def create(
             cls,
             *,
-            filename,
-            hash=None,
-            upload_timestamp=None,
-            uploaded_by=None,
-    ):
+            filename: str,
+            hash: Optional[str] = None,
+            upload_timestamp: Optional[int] = None,
+            uploaded_by: Optional[str] = None,
+    ) -> 'Package':
         if not re.match('[a-zA-Z0-9_\-\.]+$', filename) or '..' in filename:
             raise ValueError('Unsafe package name: {}'.format(filename))
 
@@ -142,7 +153,7 @@ class Package(collections.namedtuple('Package', (
 
 
 @contextlib.contextmanager
-def atomic_write(path):
+def atomic_write(path: str) -> Generator[IO[str], None, None]:
     tmp = tempfile.mktemp(
         prefix='.' + os.path.basename(path),
         dir=os.path.dirname(path),
@@ -157,13 +168,20 @@ def atomic_write(path):
         os.rename(tmp, path)
 
 
-def _format_datetime(dt):
+def _format_datetime(dt: datetime) -> str:
     return dt.strftime('%Y-%m-%d %H:%M:%S')
 
 
 # TODO: at some point there will be so many options we'll want to make a config
 # object or similar instead of adding more arguments here
-def build_repo(packages, output_path, packages_url, title, logo, logo_width):
+def build_repo(
+        packages: Dict[str, Set[Package]],
+        output_path: str,
+        packages_url: str,
+        title: str,
+        logo: str,
+        logo_width: int,
+) -> None:
     simple = os.path.join(output_path, 'simple')
     os.makedirs(simple, exist_ok=True)
 
@@ -192,11 +210,10 @@ def build_repo(packages, output_path, packages_url, title, logo, logo_width):
         ))
 
     for package_name, versions in packages.items():
-        package_dir = os.path.join(simple, package_name)
-        os.makedirs(package_dir, exist_ok=True)
-
         # /simple/{package}/index.html
-        with atomic_write(os.path.join(package_dir, 'index.html')) as f:
+        simple_package_dir = os.path.join(simple, package_name)
+        os.makedirs(simple_package_dir, exist_ok=True)
+        with atomic_write(os.path.join(simple_package_dir, 'index.html')) as f:
             f.write(jinja_env.get_template('package.html').render(
                 date=current_date,
                 package_name=package_name,
@@ -210,13 +227,15 @@ def build_repo(packages, output_path, packages_url, title, logo, logo_width):
             ))
 
 
-def _lines_from_path(path):
+def _lines_from_path(path: str) -> List[str]:
     f = sys.stdin if path == '-' else open(path)
     return f.read().splitlines()
 
 
-def _create_packages(package_infos):
-    packages = collections.defaultdict(set)
+def _create_packages(
+        package_infos: Iterator[Dict[str, Any]],
+) -> Dict[str, Set[Package]]:
+    packages: Dict[str, Set[Package]] = collections.defaultdict(set)
     for package_info in package_infos:
         try:
             package = Package.create(**package_info)
@@ -229,15 +248,15 @@ def _create_packages(package_infos):
     return packages
 
 
-def package_list(path):
+def package_list(path: str) -> Dict[str, Set[Package]]:
     return _create_packages({'filename': line} for line in _lines_from_path(path))
 
 
-def package_list_json(path):
+def package_list_json(path: str) -> Dict[str, Set[Package]]:
     return _create_packages(json.loads(line) for line in _lines_from_path(path))
 
 
-def main(argv=None):
+def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
 
     package_input_group = parser.add_mutually_exclusive_group(required=True)
@@ -283,6 +302,7 @@ def main(argv=None):
         args.logo,
         args.logo_width,
     )
+    return 0
 
 
 if __name__ == '__main__':
