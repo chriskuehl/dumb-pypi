@@ -58,6 +58,7 @@ def test_guess_name_version_from_filename_only_name(filename, name, version):
     'lol',
     'lol-sup',
     '-20160920.193125.zip',
+    'playlyfe-0.1.1-2.7.6-none-any.whl',  # 2.7.6 is not a valid python tag
 ))
 def test_guess_name_version_from_filename_invalid(filename):
     with pytest.raises(ValueError):

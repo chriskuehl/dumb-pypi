@@ -11,10 +11,10 @@ import sys
 import tempfile
 from datetime import datetime
 
+import distlib.wheel
 import jinja2
 import packaging.utils
 import packaging.version
-from distlib.wheel import Wheel
 
 
 jinja_env = jinja2.Environment(
@@ -32,8 +32,12 @@ def remove_extension(name):
 
 def guess_name_version_from_filename(filename):
     if filename.endswith('.whl'):
-        wheel = Wheel(filename)
-        return wheel.name, wheel.version
+        try:
+            wheel = distlib.wheel.Wheel(filename)
+        except distlib.DistlibException:
+            raise ValueError(f'Invalid package name: {filename}')
+        else:
+            return wheel.name, wheel.version
     else:
         # These don't have a well-defined format like wheels do, so they are
         # sort of "best effort", with lots of tests to back them up.
