@@ -79,6 +79,16 @@ def test_package_invalid(filename):
         main.Package.create(filename=filename)
 
 
+def test_package_url_no_hash():
+    package = main.Package.create(filename='f.tar.gz')
+    assert package.url('/prefix') == '/prefix/f.tar.gz'
+
+
+def test_package_url_with_hash():
+    package = main.Package.create(filename='f.tar.gz', hash='sha256=badf00d')
+    assert package.url('/prefix') == '/prefix/f.tar.gz#sha256=badf00d'
+
+
 def test_build_repo_smoke_test(tmpdir):
     package_list = tmpdir.join('package-list')
     package_list.write('ocflib-2016.12.10.1.48-py2.py3-none-any.whl\n')
