@@ -172,25 +172,24 @@ def _format_datetime(dt: datetime) -> str:
     return dt.strftime('%Y-%m-%d %H:%M:%S')
 
 
-# TODO: at some point there will be so many options we'll want to make a config
-# object or similar instead of adding more arguments here
-def build_repo(
-        packages: Dict[str, Set[Package]],
-        output_path: str,
-        packages_url: str,
-        title: str,
-        logo: str,
-        logo_width: int,
-) -> None:
-    simple = os.path.join(output_path, 'simple')
+class Settings(NamedTuple):
+    output_dir: str
+    packages_url: str
+    title: str
+    logo: str
+    logo_width: int
+
+
+def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
+    simple = os.path.join(settings.output_dir, 'simple')
     os.makedirs(simple, exist_ok=True)
 
     current_date = _format_datetime(datetime.now())
 
     # /index.html
-    with atomic_write(os.path.join(output_path, 'index.html')) as f:
+    with atomic_write(os.path.join(settings.output_dir, 'index.html')) as f:
         f.write(jinja_env.get_template('index.html').render(
-            title=title,
+            title=settings.title,
             packages=sorted(
                 (
                     package,
@@ -198,8 +197,8 @@ def build_repo(
                 )
                 for package in packages
             ),
-            logo=logo,
-            logo_width=logo_width,
+            logo=settings.logo,
+            logo_width=settings.logo_width,
         ))
 
     # /simple/index.html
@@ -223,7 +222,7 @@ def build_repo(
                     # Newer versions should sort first.
                     reverse=True,
                 ),
-                packages_url=packages_url,
+                packages_url=settings.packages_url,
             ))
 
 
@@ -294,14 +293,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    build_repo(
-        args.packages,
-        args.output_dir,
-        args.packages_url,
-        args.title,
-        args.logo,
-        args.logo_width,
+    settings = Settings(
+        output_dir=args.output_dir,
+        packages_url=args.packages_url,
+        title=args.title,
+        logo=args.logo,
+        logo_width=args.logo_width,
     )
+    build_repo(args.packages, settings)
     return 0
 
 
