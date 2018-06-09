@@ -26,7 +26,7 @@ UrlAndPath = collections.namedtuple('UrlAndPath', ('url', 'path'))
 def running_server(tmpdir_factory):
     ip = '127.0.0.1'
     port = ephemeral_port_reserve.reserve(ip=ip)
-    url = 'http://{}:{}'.format(ip, port)
+    url = f'http://{ip}:{port}'
 
     path = tmpdir_factory.mktemp('http')
     proc = subprocess.Popen(
@@ -59,7 +59,7 @@ def tmpweb(running_server, tmpdir):
     name = str(uuid.uuid4())
     running_server.path.join(name).mksymlinkto(path)
 
-    return UrlAndPath('{}/{}'.format(running_server.url, name), path)
+    return UrlAndPath(f'{running_server.url}/{name}', path)
 
 
 def install_pip(version, path):
@@ -67,7 +67,7 @@ def install_pip(version, path):
     subprocess.check_call(('virtualenv', '-p', 'python2.7', path.strpath))
 
     pip = path.join('bin', 'pip').strpath
-    subprocess.check_call((pip, 'install', 'pip=={}'.format(version)))
+    subprocess.check_call((pip, 'install', f'pip=={version}'))
 
     version_output = subprocess.check_output((pip, '--version'))
     assert version_output.split()[1].decode('ascii') == version
@@ -77,10 +77,7 @@ def install_pip(version, path):
 @pytest.fixture(scope='session')
 def pip_versions(tmpdir_factory):
     return {
-        version: install_pip(
-            version,
-            tmpdir_factory.mktemp('pip-{}'.format(version)),
-        )
+        version: install_pip(version, tmpdir_factory.mktemp(f'pip-{version}'))
         for version in ALL_PIPS
     }
 

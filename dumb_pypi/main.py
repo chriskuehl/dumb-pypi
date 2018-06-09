@@ -139,7 +139,7 @@ class Package(NamedTuple):
             uploaded_by: Optional[str] = None,
     ) -> 'Package':
         if not re.match('[a-zA-Z0-9_\-\.]+$', filename) or '..' in filename:
-            raise ValueError('Unsafe package name: {}'.format(filename))
+            raise ValueError(f'Unsafe package name: {filename}')
 
         name, version = guess_name_version_from_filename(filename)
         return cls(
@@ -241,7 +241,7 @@ def _create_packages(
             package = Package.create(**package_info)
         except ValueError as ex:
             # TODO: this should really be optional; i'd prefer it to fail hard
-            print('{} (skipping package)'.format(ex), file=sys.stderr)
+            print(f'{ex} (skipping package)', file=sys.stderr)
         else:
             packages[package.name].add(Package.create(**package_info))
 
