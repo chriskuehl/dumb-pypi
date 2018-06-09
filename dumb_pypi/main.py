@@ -127,7 +127,8 @@ class Package(NamedTuple):
         return info
 
     def url(self, base_url: str) -> str:
-        return f'{base_url.rstrip("/")}/{self.filename}'
+        hash_part = f'#{self.hash}' if self.hash else ''
+        return f'{base_url.rstrip("/")}/{self.filename}{hash_part}'
 
     @classmethod
     def create(
