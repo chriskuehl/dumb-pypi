@@ -3,8 +3,6 @@ import argparse
 import collections
 import contextlib
 import json
-import operator
-import os
 import os.path
 import re
 import sys
@@ -211,40 +209,12 @@ class Settings(NamedTuple):
 
 def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
     simple = os.path.join(settings.output_dir, 'simple')
-    os.makedirs(simple, exist_ok=True)
     pypi = os.path.join(settings.output_dir, 'pypi')
-    os.makedirs(pypi, exist_ok=True)
-
     current_date = _format_datetime(datetime.utcnow())
 
-    # /index.html
-    with atomic_write(os.path.join(settings.output_dir, 'index.html')) as f:
-        f.write(jinja_env.get_template('index.html').render(
-            title=settings.title,
-            packages=sorted(
-                (
-                    package,
-                    sorted(packages[package])[-1].version,
-                )
-                for package in packages
-            ),
-            logo=settings.logo,
-            logo_width=settings.logo_width,
-        ))
-
-    # /simple/index.html
-    with atomic_write(os.path.join(simple, 'index.html')) as f:
-        f.write(jinja_env.get_template('simple.html').render(
-            date=current_date,
-            generate_timestamp=settings.generate_timestamp,
-            package_names=sorted(packages),
-        ))
-
     for package_name, files in packages.items():
-        sorted_files = sorted(
-            # Newer versions should sort first.
-            files, key=operator.attrgetter('sort_key'), reverse=True,
-        )
+        # Newer versions should sort first.
+        sorted_files = sorted(files, reverse=True)
 
         # /simple/{package}/index.html
         simple_package_dir = os.path.join(simple, package_name)
@@ -263,6 +233,30 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
         os.makedirs(pypi_package_dir, exist_ok=True)
         with atomic_write(os.path.join(pypi_package_dir, 'json')) as f:
             json.dump(_package_json(sorted_files, settings.packages_url), f)
+
+    # /simple/index.html
+    os.makedirs(simple, exist_ok=True)
+    with atomic_write(os.path.join(simple, 'index.html')) as f:
+        f.write(jinja_env.get_template('simple.html').render(
+            date=current_date,
+            generate_timestamp=settings.generate_timestamp,
+            package_names=sorted(packages),
+        ))
+
+    # /index.html
+    with atomic_write(os.path.join(settings.output_dir, 'index.html')) as f:
+        f.write(jinja_env.get_template('index.html').render(
+            title=settings.title,
+            packages=sorted(
+                (
+                    package,
+                    sorted(packages[package])[-1].version,
+                )
+                for package in packages
+            ),
+            logo=settings.logo,
+            logo_width=settings.logo_width,
+        ))
 
 
 def _lines_from_path(path: str) -> List[str]:
