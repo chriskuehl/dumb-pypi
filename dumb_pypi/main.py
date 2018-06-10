@@ -109,7 +109,8 @@ class Package(NamedTuple):
     @property
     def formatted_upload_time(self) -> str:
         assert self.upload_timestamp is not None
-        return _format_datetime(datetime.fromtimestamp(self.upload_timestamp))
+        dt = datetime.utcfromtimestamp(self.upload_timestamp)
+        return _format_datetime(dt)
 
     @property
     def info_string(self) -> str:
@@ -126,9 +127,21 @@ class Package(NamedTuple):
             info += f', {self.uploaded_by}'
         return info
 
-    def url(self, base_url: str) -> str:
-        hash_part = f'#{self.hash}' if self.hash else ''
+    def url(self, base_url: str, *, include_hash: bool = True) -> str:
+        hash_part = f'#{self.hash}' if self.hash and include_hash else ''
         return f'{base_url.rstrip("/")}/{self.filename}{hash_part}'
+
+    def json_info(self, base_url: str) -> Dict[str, Any]:
+        ret: Dict[str, Any] = {
+            'filename': self.filename,
+            'url': self.url(base_url, include_hash=False),
+        }
+        if self.upload_timestamp is not None:
+            ret['upload_time'] = self.formatted_upload_time
+        if self.hash is not None:
+            algo, h = self.hash.split('=')
+            ret['digests'] = {algo: h}
+        return ret
 
     @classmethod
     def create(
@@ -173,6 +186,20 @@ def _format_datetime(dt: datetime) -> str:
     return dt.strftime('%Y-%m-%d %H:%M:%S')
 
 
+def _package_json(files: List[Package], base_url: str) -> Dict[str, Any]:
+    # note: the full api contains much more, we only output the info we have
+    by_version: Dict[str, List[Dict[str, Any]]] = collections.defaultdict(list)
+    for file in files:
+        if file.version is not None:
+            by_version[file.version].append(file.json_info(base_url))
+
+    return {
+        'info': {'name': files[0].name, 'version': files[0].version},
+        'releases': by_version,
+        'urls': by_version[files[0].version] if files[0].version else [],
+    }
+
+
 class Settings(NamedTuple):
     output_dir: str
     packages_url: str
@@ -184,8 +211,10 @@ class Settings(NamedTuple):
 def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
     simple = os.path.join(settings.output_dir, 'simple')
     os.makedirs(simple, exist_ok=True)
+    pypi = os.path.join(settings.output_dir, 'pypi')
+    os.makedirs(pypi, exist_ok=True)
 
-    current_date = _format_datetime(datetime.now())
+    current_date = _format_datetime(datetime.utcnow())
 
     # /index.html
     with atomic_write(os.path.join(settings.output_dir, 'index.html')) as f:
@@ -209,7 +238,12 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
             package_names=sorted(packages),
         ))
 
-    for package_name, versions in packages.items():
+    for package_name, files in packages.items():
+        sorted_files = sorted(
+            # Newer versions should sort first.
+            files, key=operator.attrgetter('sort_key'), reverse=True,
+        )
+
         # /simple/{package}/index.html
         simple_package_dir = os.path.join(simple, package_name)
         os.makedirs(simple_package_dir, exist_ok=True)
@@ -217,14 +251,15 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
             f.write(jinja_env.get_template('package.html').render(
                 date=current_date,
                 package_name=package_name,
-                versions=sorted(
-                    versions,
-                    key=operator.attrgetter('sort_key'),
-                    # Newer versions should sort first.
-                    reverse=True,
-                ),
+                files=sorted_files,
                 packages_url=settings.packages_url,
             ))
+
+        # /pypi/{package}/json
+        pypi_package_dir = os.path.join(pypi, package_name)
+        os.makedirs(pypi_package_dir, exist_ok=True)
+        with atomic_write(os.path.join(pypi_package_dir, 'json')) as f:
+            json.dump(_package_json(sorted_files, settings.packages_url), f)
 
 
 def _lines_from_path(path: str) -> List[str]:

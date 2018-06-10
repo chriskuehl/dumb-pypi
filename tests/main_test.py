@@ -89,6 +89,72 @@ def test_package_url_with_hash():
     assert package.url('/prefix') == '/prefix/f.tar.gz#sha256=badf00d'
 
 
+def test_package_info_all_info():
+    package = main.Package.create(
+        filename='f-1.0.tar.gz',
+        hash='sha256=deadbeef',
+        upload_timestamp=1528586805,
+    )
+    ret = package.json_info('/prefix')
+    assert ret == {
+        'digests': {'sha256': 'deadbeef'},
+        'filename': 'f-1.0.tar.gz',
+        'url': '/prefix/f-1.0.tar.gz',
+        'upload_time': '2018-06-09 23:26:45',
+    }
+
+
+def test_package_info_minimal_info():
+    ret = main.Package.create(filename='f-1.0.tar.gz').json_info('/prefix')
+    assert ret == {'filename': 'f-1.0.tar.gz', 'url': '/prefix/f-1.0.tar.gz'}
+
+
+def test_package_json_excludes_non_versioned_packages():
+    pkgs = [main.Package.create(filename='f.tar.gz')]
+    ret = main._package_json(pkgs, '/prefix')
+    assert ret == {
+        'info': {'name': 'f', 'version': None},
+        'releases': {},
+        'urls': [],
+    }
+
+
+def test_package_json_packages_with_info():
+    pkgs = [
+        main.Package.create(filename='f-2.0.tar.gz'),
+        main.Package.create(filename='f-1.0-py2.py3-none-any.whl'),
+        main.Package.create(filename='f-1.0.tar.gz'),
+    ]
+    ret = main._package_json(pkgs, '/prefix')
+    assert ret == {
+        'info': {'name': 'f', 'version': '2.0'},
+        'releases': {
+            '2.0': [
+                {
+                    'filename': 'f-2.0.tar.gz',
+                    'url': '/prefix/f-2.0.tar.gz',
+                },
+            ],
+            '1.0': [
+                {
+                    'filename': 'f-1.0-py2.py3-none-any.whl',
+                    'url': '/prefix/f-1.0-py2.py3-none-any.whl',
+                },
+                {
+                    'filename': 'f-1.0.tar.gz',
+                    'url': '/prefix/f-1.0.tar.gz',
+                },
+            ],
+        },
+        'urls': [
+            {
+                'filename': 'f-2.0.tar.gz',
+                'url': '/prefix/f-2.0.tar.gz',
+            },
+        ],
+    }
+
+
 def test_build_repo_smoke_test(tmpdir):
     package_list = tmpdir.join('package-list')
     package_list.write('ocflib-2016.12.10.1.48-py2.py3-none-any.whl\n')
@@ -111,7 +177,7 @@ def test_build_repo_json_smoke_test(tmpdir):
                 'filename': 'ocflib-2016.12.10.1.48-py2.py3-none-any.whl',
                 'uploaded_by': 'ckuehl',
                 'upload_timestamp': 1515783971,
-                'hash': 'md5-b1946ac92492d2347c6235b4d2611184',
+                'hash': 'md5=b1946ac92492d2347c6235b4d2611184',
             },
             {
                 'filename': 'numpy-1.11.0rc1.tar.gz',
