@@ -206,6 +206,7 @@ class Settings(NamedTuple):
     title: str
     logo: str
     logo_width: int
+    generate_timestamp: bool
 
 
 def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
@@ -235,6 +236,7 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
     with atomic_write(os.path.join(simple, 'index.html')) as f:
         f.write(jinja_env.get_template('simple.html').render(
             date=current_date,
+            generate_timestamp=settings.generate_timestamp,
             package_names=sorted(packages),
         ))
 
@@ -250,6 +252,7 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
         with atomic_write(os.path.join(simple_package_dir, 'index.html')) as f:
             f.write(jinja_env.get_template('package.html').render(
                 date=current_date,
+                generate_timestamp=settings.generate_timestamp,
                 package_name=package_name,
                 files=sorted_files,
                 packages_url=settings.packages_url,
@@ -327,6 +330,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         '--logo-width', type=int,
         help='width of logo to display', default=0,
     )
+    parser.add_argument(
+        '--no-generate-timestamp',
+        action='store_false', dest='generate_timestamp',
+        help=(
+            "Don't template creation timestamp in outputs.  This option makes "
+            'the output repeatable.'
+        ),
+    )
     args = parser.parse_args(argv)
 
     settings = Settings(
@@ -335,6 +346,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         title=args.title,
         logo=args.logo,
         logo_width=args.logo_width,
+        generate_timestamp=args.generate_timestamp,
     )
     build_repo(args.packages, settings)
     return 0

@@ -6,7 +6,9 @@
     <body>
         <h1>{{package_name}}</h1>
         <p>Latest version: {{(files|first).version}}</p>
-        <p>Generated on {{date}}.</p>
+        {% if generate_timestamp %}
+            <p>Generated on {{date}}.</p>
+        {% endif %}
         <ul>
             {% for file in files %}
                 <li><a href="{{file.url(packages_url)}}">{{file.filename}}</a> ({{file.info_string}})</li>
