@@ -5,7 +5,9 @@
     </head>
     <body>
         <h1>Simple index</h1>
-        <p>Generated on {{date}}.</p>
+        {% if generate_timestamp %}
+            <p>Generated on {{date}}.</p>
+        {% endif %}
         <ul>
             {% for package in package_names %}
                 <li><a href="{{package}}/">{{package}}</a></li>

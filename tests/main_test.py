@@ -199,6 +199,19 @@ def test_build_repo_json_smoke_test(tmpdir):
     assert tmpdir.join('simple', 'ocflib', 'index.html').check(file=True)
 
 
+def test_build_repo_no_generate_timestamp(tmpdir):
+    package_list = tmpdir.join('package-list')
+    package_list.write('pkg-1.0.tar.gz\n')
+    main.main((
+        '--package-list', package_list.strpath,
+        '--output-dir', tmpdir.strpath,
+        '--packages-url', '../../pool',
+        '--no-generate-timestamp',
+    ))
+    for p in ('simple/index.html', 'simple/pkg/index.html'):
+        assert 'Generated on' not in tmpdir.join(p).read()
+
+
 def test_build_repo_even_with_bad_package_names(tmpdir):
     package_list = tmpdir.join('package-list')
     package_list.write('\n'.join((
