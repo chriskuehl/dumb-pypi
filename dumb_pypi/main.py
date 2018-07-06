@@ -150,7 +150,7 @@ class Package(NamedTuple):
             upload_timestamp: Optional[int] = None,
             uploaded_by: Optional[str] = None,
     ) -> 'Package':
-        if not re.match('[a-zA-Z0-9_\-\.]+$', filename) or '..' in filename:
+        if not re.match('[a-zA-Z0-9_\-\.\+]+$', filename) or '..' in filename:
             raise ValueError(f'Unsafe package name: {filename}')
 
         name, version = guess_name_version_from_filename(filename)
