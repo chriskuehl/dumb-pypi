@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='dumb-pypi',
-    version='1.3.0',
+    version='1.3.1',
     author='Chris Kuehl',
     author_email='ckuehl@ocf.berkeley.edu',
     url='https://github.com/chriskuehl/dumb-pypi',
