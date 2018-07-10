@@ -105,11 +105,8 @@ def test_package_info_all_info():
 
 
 def test_package_info_wheel_with_local_version():
-    ret = main.Package.create(filename='f-1.0+local-py3-none-any.whl').json_info('/prefix')
-    assert ret == {
-        'filename': 'f-1.0+local-py3-none-any.whl',
-        'url': '/prefix/f-1.0+local-py3-none-any.whl'
-    }
+    ret = main.Package.create(filename='f-1.0+local-py3-none-any.whl')
+    assert ret.version == '1.0+local'
 
 
 def test_package_info_minimal_info():
