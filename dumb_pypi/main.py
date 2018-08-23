@@ -43,12 +43,11 @@ def guess_name_version_from_filename(
         filename: str,
 ) -> Tuple[str, Optional[str]]:
     if filename.endswith('.whl'):
-        try:
-            wheel = distlib.wheel.Wheel(filename)
-        except distlib.DistlibException:
-            raise ValueError(f'Invalid package name: {filename}')
+        m = distlib.wheel.FILENAME_RE.match(filename)
+        if m is not None:
+            return m.group('nm'), m.group('vn')
         else:
-            return wheel.name, wheel.version
+            raise ValueError(f'Invalid package name: {filename}')
     else:
         # These don't have a well-defined format like wheels do, so they are
         # sort of "best effort", with lots of tests to back them up.
@@ -80,6 +79,7 @@ class Package(NamedTuple):
     filename: str
     name: str
     version: Optional[str]
+    parsed_version: packaging.version.Version
     hash: Optional[str]
     upload_timestamp: Optional[int]
     uploaded_by: Optional[str]
@@ -93,7 +93,7 @@ class Package(NamedTuple):
         """Sort key for a filename."""
         return (
             self.name,
-            packaging.version.parse(self.version or '0'),
+            self.parsed_version,
 
             # This looks ridiculous, but it's so that like extensions sort
             # together when the name and version are the same (otherwise it
@@ -158,6 +158,7 @@ class Package(NamedTuple):
             filename=filename,
             name=packaging.utils.canonicalize_name(name),
             version=version,
+            parsed_version=packaging.version.parse(version or '0'),
             hash=hash,
             upload_timestamp=upload_timestamp,
             uploaded_by=uploaded_by,
@@ -212,10 +213,11 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
     pypi = os.path.join(settings.output_dir, 'pypi')
     current_date = _format_datetime(datetime.utcnow())
 
-    for package_name, files in packages.items():
-        # Newer versions should sort first.
-        sorted_files = sorted(files, reverse=True)
+    # Sorting package versions is actually pretty expensive, so we do it once
+    # at the start.
+    sorted_packages = {name: sorted(files) for name, files in packages.items()}
 
+    for package_name, sorted_files in sorted_packages.items():
         # /simple/{package}/index.html
         simple_package_dir = os.path.join(simple, package_name)
         os.makedirs(simple_package_dir, exist_ok=True)
@@ -240,7 +242,7 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
         f.write(jinja_env.get_template('simple.html').render(
             date=current_date,
             generate_timestamp=settings.generate_timestamp,
-            package_names=sorted(packages),
+            package_names=sorted(sorted_packages),
         ))
 
     # /index.html
@@ -250,9 +252,9 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
             packages=sorted(
                 (
                     package,
-                    sorted(packages[package])[-1].version,
+                    sorted_versions[-1].version,
                 )
-                for package in packages
+                for package, sorted_versions in sorted_packages.items()
             ),
             logo=settings.logo,
             logo_width=settings.logo_width,
