@@ -5,12 +5,12 @@
     </head>
     <body>
         <h1>{{package_name}}</h1>
-        <p>Latest version: {{(files|first).version}}</p>
+        <p>Latest version: {{(files|last).version}}</p>
         {% if generate_timestamp %}
             <p>Generated on {{date}}.</p>
         {% endif %}
         <ul>
-            {% for file in files %}
+            {% for file in files|reverse %}
                 <li><a href="{{file.url(packages_url)}}">{{file.filename}}</a> ({{file.info_string}})</li>
             {% endfor %}
         </ul>
