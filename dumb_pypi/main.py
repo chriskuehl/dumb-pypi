@@ -178,7 +178,7 @@ def atomic_write(path: str) -> Generator[IO[str], None, None]:
         os.remove(tmp)
         raise
     else:
-        os.rename(tmp, path)
+        os.replace(tmp, path)
 
 
 def _format_datetime(dt: datetime) -> str:
