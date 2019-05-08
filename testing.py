@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Tuple
 
 from dumb_pypi import main
 
@@ -23,7 +24,7 @@ def make_package(path):
                 'setup(name="{}", version="{}")\n'.format(name, version),
             )
 
-        args = ('sdist', '--formats=zip')
+        args: Tuple[str, ...] = ('sdist', '--formats=zip')
         if path.endswith(('.tgz', '.tar.gz')):
             args = ('sdist', '--formats=gztar')
         elif path.endswith('.tar'):
