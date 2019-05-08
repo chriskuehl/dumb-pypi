@@ -84,7 +84,7 @@ class Package(NamedTuple):
     upload_timestamp: Optional[int]
     uploaded_by: Optional[str]
 
-    def __lt__(self, other: tuple) -> bool:
+    def __lt__(self, other: Tuple[Any, ...]) -> bool:
         assert isinstance(other, Package), type(other)
         return self.sort_key < other.sort_key
 
