@@ -1,5 +1,5 @@
 language: python
-install: pip install coveralls
+install: pip install coveralls tox
 script: make test
 python: '3.6'
 after_success:
@@ -8,6 +8,4 @@ after_success:
 cache:
     directories:
         - $HOME/.cache/pip
-        - $HOME/.cache/pip-faster
-        - $HOME/.cache/venv-update
         - $HOME/.cache/pre-commit
