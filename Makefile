@@ -1,8 +1,8 @@
 .PHONY: minimal
 minimal: venv
 
-venv: vendor/venv-update setup.py requirements-dev.txt Makefile
-	vendor/venv-update venv= -ppython3.6 venv install= -rrequirements-dev.txt -e .
+venv: setup.py requirements-dev.txt Makefile tox.ini
+	tox --devenv venv
 
 .PHONY: test
 test: venv

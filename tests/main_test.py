@@ -176,7 +176,7 @@ def test_build_repo_smoke_test(tmpdir):
 
 def test_build_repo_json_smoke_test(tmpdir):
     package_list = tmpdir.join('package-list')
-    package_list.write('\n'.join((
+    package_list.write('\n'.join(
         json.dumps(info) for info in (
             {
                 'filename': 'ocflib-2016.12.10.1.48-py2.py3-none-any.whl',
@@ -192,7 +192,7 @@ def test_build_repo_json_smoke_test(tmpdir):
                 'filename': 'scikit-learn-0.15.1.tar.gz',
             },
         )
-    )) + '\n')
+    ) + '\n')
     main.main((
         '--package-list-json', package_list.strpath,
         '--output-dir', tmpdir.strpath,
