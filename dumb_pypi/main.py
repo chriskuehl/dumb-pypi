@@ -282,7 +282,7 @@ def _create_packages(
             # TODO: this should really be optional; i'd prefer it to fail hard
             print(f'{ex} (skipping package)', file=sys.stderr)
         else:
-            packages[package.name].add(Package.create(**package_info))
+            packages[package.name].add(package)
 
     return packages
 
