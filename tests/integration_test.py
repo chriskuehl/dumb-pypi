@@ -1,22 +1,24 @@
+import os
 import subprocess
 
 import pytest
 
 from dumb_pypi import main
+from testing import FakePackage
 from testing import make_package
 
 
-def install_packages(path, package_names):
+def install_packages(path, fake_packages):
     """Deploy fake packages with the given names into path."""
     pool = path.join('pool').mkdir()
-    for package in package_names:
-        make_package(pool.join(package).strpath)
+    for package in fake_packages:
+        make_package(package, pool.strpath)
 
-    package_list = path.join('package-list')
-    package_list.write('\n'.join(package_names) + '\n')
+    package_list = path.join('package-list.json')
+    package_list.write('\n'.join(package.as_json() for package in fake_packages) + '\n')
 
     main.main((
-        '--package-list', package_list.strpath,
+        '--package-list-json', package_list.strpath,
         '--output-dir', path.strpath,
         '--packages-url', '../../pool/',
     ))
@@ -28,10 +30,10 @@ def pip_download(pip, index_url, path, *spec):
     )
 
 
-@pytest.mark.parametrize('package_names', (
-    ('ocflib-2016.12.10.1.48-py2.py3-none-any.whl',),
-    ('ocflib-2016.12.10.1.48.tar.gz',),
-    ('ocflib-2016.12.10.1.48.zip',),
+@pytest.mark.parametrize('packages', (
+    (FakePackage('ocflib-2016.12.10.1.48-py2.py3-none-any.whl'),),
+    (FakePackage('ocflib-2016.12.10.1.48.tar.gz'),),
+    (FakePackage('ocflib-2016.12.10.1.48.zip'),),
 ))
 @pytest.mark.parametrize('requirement', (
     'ocflib',
@@ -42,10 +44,10 @@ def test_simple_package(
         tmpdir,
         tmpweb,
         all_pips,
-        package_names,
+        packages,
         requirement,
 ):
-    install_packages(tmpweb.path, package_names)
+    install_packages(tmpweb.path, packages)
     pip_download(
         all_pips,
         tmpweb.url + '/simple',
@@ -54,12 +56,12 @@ def test_simple_package(
     )
 
 
-@pytest.mark.parametrize('package_names', (
-    ('aspy.yaml-0.2.1.zip',),
-    ('aspy.yaml-0.2.1.tar',),
-    ('aspy.yaml-0.2.1.tar.gz',),
-    ('aspy.yaml-0.2.1.tgz',),
-    ('aspy.yaml-0.2.1-py2.py3-none-any.whl',)
+@pytest.mark.parametrize('packages', (
+    (FakePackage('aspy.yaml-0.2.1.zip'),),
+    (FakePackage('aspy.yaml-0.2.1.tar'),),
+    (FakePackage('aspy.yaml-0.2.1.tar.gz'),),
+    (FakePackage('aspy.yaml-0.2.1.tgz'),),
+    (FakePackage('aspy.yaml-0.2.1-py2.py3-none-any.whl'),)
 ))
 @pytest.mark.parametrize('requirement', (
     'aspy.yaml',
@@ -71,7 +73,7 @@ def test_normalized_packages_modern_pip(
         tmpdir,
         tmpweb,
         modern_pips,
-        package_names,
+        packages,
         requirement,
 ):
     """Only modern versions of pip fully normalize names before making requests
@@ -79,7 +81,7 @@ def test_normalized_packages_modern_pip(
 
     RATIONALE.md explains how we suggest adding support for old versions of pip.
     """
-    install_packages(tmpweb.path, package_names)
+    install_packages(tmpweb.path, packages)
     pip_download(
         modern_pips,
         tmpweb.url + '/simple',
@@ -103,7 +105,7 @@ def test_normalized_packages_modern_pip_wheels(
     normalized, so you can install with a wider varierty of names.
     """
     install_packages(tmpweb.path, (
-        'aspy.yaml-0.2.1-py2.py3-none-any.whl',
+        FakePackage('aspy.yaml-0.2.1-py2.py3-none-any.whl'),
     ))
     pip_download(
         modern_pips,
@@ -111,3 +113,30 @@ def test_normalized_packages_modern_pip_wheels(
         tmpdir.strpath,
         requirement,
     )
+
+
+def test_pip_9_respects_requires_python(
+        tmpdir,
+        tmpweb,
+        pip_versions,
+):
+    pip = pip_versions['9.0.1']
+    install_packages(
+        tmpweb.path,
+        (
+            # This is a fallback that shouldn't be used.
+            FakePackage('foo-1.tar.gz'),
+            # This one should match all verisons we care about.
+            FakePackage('foo-2.tar.gz', requires_python='>=2'),
+            # Nonsensical requires_python value that will never match.
+            FakePackage('foo-3.tar.gz', requires_python='==1.2.3'),
+        )
+    )
+    pip_download(
+        pip,
+        tmpweb.url + '/simple',
+        tmpdir.strpath,
+        'foo',
+    )
+    downloaded_package, = tmpdir.listdir(fil=os.path.isfile)
+    assert downloaded_package.basename == 'foo-2.tar.gz'
