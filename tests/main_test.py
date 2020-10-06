@@ -93,6 +93,7 @@ def test_package_info_all_info():
     package = main.Package.create(
         filename='f-1.0.tar.gz',
         hash='sha256=deadbeef',
+        requires_python='>=3.6',
         upload_timestamp=1528586805,
     )
     ret = package.json_info('/prefix')
@@ -100,6 +101,7 @@ def test_package_info_all_info():
         'digests': {'sha256': 'deadbeef'},
         'filename': 'f-1.0.tar.gz',
         'url': '/prefix/f-1.0.tar.gz',
+        'requires_python': '>=3.6',
         'upload_time': '2018-06-09 23:26:45',
     }
 
@@ -111,7 +113,11 @@ def test_package_info_wheel_with_local_version():
 
 def test_package_info_minimal_info():
     ret = main.Package.create(filename='f-1.0.tar.gz').json_info('/prefix')
-    assert ret == {'filename': 'f-1.0.tar.gz', 'url': '/prefix/f-1.0.tar.gz'}
+    assert ret == {
+        'filename': 'f-1.0.tar.gz',
+        'url': '/prefix/f-1.0.tar.gz',
+        'requires_python': None,
+    }
 
 
 def test_package_json_excludes_non_versioned_packages():
@@ -126,7 +132,7 @@ def test_package_json_excludes_non_versioned_packages():
 
 def test_package_json_packages_with_info():
     pkgs = [
-        main.Package.create(filename='f-2.0.tar.gz'),
+        main.Package.create(filename='f-2.0.tar.gz', requires_python='>=3.6'),
         main.Package.create(filename='f-1.0-py2.py3-none-any.whl'),
         main.Package.create(filename='f-1.0.tar.gz'),
     ]
@@ -138,16 +144,19 @@ def test_package_json_packages_with_info():
                 {
                     'filename': 'f-2.0.tar.gz',
                     'url': '/prefix/f-2.0.tar.gz',
+                    'requires_python': '>=3.6',
                 },
             ],
             '1.0': [
                 {
                     'filename': 'f-1.0-py2.py3-none-any.whl',
                     'url': '/prefix/f-1.0-py2.py3-none-any.whl',
+                    'requires_python': None,
                 },
                 {
                     'filename': 'f-1.0.tar.gz',
                     'url': '/prefix/f-1.0.tar.gz',
+                    'requires_python': None,
                 },
             ],
         },
@@ -155,6 +164,7 @@ def test_package_json_packages_with_info():
             {
                 'filename': 'f-2.0.tar.gz',
                 'url': '/prefix/f-2.0.tar.gz',
+                'requires_python': '>=3.6',
             },
         ],
     }
@@ -183,6 +193,7 @@ def test_build_repo_json_smoke_test(tmpdir):
                 'uploaded_by': 'ckuehl',
                 'upload_timestamp': 1515783971,
                 'hash': 'md5=b1946ac92492d2347c6235b4d2611184',
+                'requires_python': '>=3.6',
             },
             {
                 'filename': 'numpy-1.11.0rc1.tar.gz',

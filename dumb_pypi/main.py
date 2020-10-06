@@ -81,6 +81,7 @@ class Package(NamedTuple):
     version: Optional[str]
     parsed_version: packaging.version.Version
     hash: Optional[str]
+    requires_python: Optional[str]
     upload_timestamp: Optional[int]
     uploaded_by: Optional[str]
 
@@ -133,6 +134,7 @@ class Package(NamedTuple):
         ret: Dict[str, Any] = {
             'filename': self.filename,
             'url': self.url(base_url, include_hash=False),
+            'requires_python': self.requires_python,
         }
         if self.upload_timestamp is not None:
             ret['upload_time'] = self.formatted_upload_time
@@ -147,6 +149,7 @@ class Package(NamedTuple):
             *,
             filename: str,
             hash: Optional[str] = None,
+            requires_python: Optional[str] = None,
             upload_timestamp: Optional[int] = None,
             uploaded_by: Optional[str] = None,
     ) -> 'Package':
@@ -160,6 +163,7 @@ class Package(NamedTuple):
             version=version,
             parsed_version=packaging.version.parse(version or '0'),
             hash=hash,
+            requires_python=requires_python,
             upload_timestamp=upload_timestamp,
             uploaded_by=uploaded_by,
         )
@@ -186,6 +190,7 @@ def _format_datetime(dt: datetime) -> str:
 
 
 def _package_json(files: List[Package], base_url: str) -> Dict[str, Any]:
+    # https://warehouse.pypa.io/api-reference/json.html
     # note: the full api contains much more, we only output the info we have
     by_version: Dict[str, List[Dict[str, Any]]] = collections.defaultdict(list)
     for file in files:

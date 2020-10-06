@@ -11,7 +11,15 @@
         {% endif %}
         <ul>
             {% for file in files|reverse %}
-                <li><a href="{{file.url(packages_url)}}">{{file.filename}}</a> ({{file.info_string}})</li>
+                <li>
+                    <a
+                        href="{{file.url(packages_url)}}"
+                        {%- if file.requires_python %}
+                            data-requires-python="{{file.requires_python}}"
+                        {%- endif %}
+                    >{{file.filename}}</a>
+                    ({{file.info_string}})
+                </li>
             {% endfor %}
         </ul>
     </body>
