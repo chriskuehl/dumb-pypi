@@ -1,37 +1,53 @@
+import json
 import os.path
 import shutil
 import subprocess
 import sys
 import tempfile
+from typing import NamedTuple
+from typing import Optional
 from typing import Tuple
 
 from dumb_pypi import main
 
 
-def make_package(path):
+class FakePackage(NamedTuple):
+    filename: str
+    requires_python: Optional[str] = None
+
+    @property
+    def setup_py_contents(self):
+        return (
+            'from setuptools import setup\n'
+            'setup(name={!r}, version={!r})\n'
+        ).format(*main.guess_name_version_from_filename(self.filename))
+
+    def as_json(self):
+        return json.dumps({
+            'filename': self.filename,
+            'requires_python': self.requires_python,
+        })
+
+
+def make_package(package: FakePackage, path: str) -> None:
     """Make a fake package at path.
 
     Even with --download, pip insists on extracting the downloaded packages (in
     order to find dependencies), so we can't just make empty files.
     """
-    name, version = main.guess_name_version_from_filename(os.path.basename(path))
-
     with tempfile.TemporaryDirectory() as td:
         setup_py = os.path.join(td, 'setup.py')
         with open(setup_py, 'w') as f:
-            f.write(
-                'from setuptools import setup\n'
-                'setup(name="{}", version="{}")\n'.format(name, version),
-            )
+            f.write(package.setup_py_contents)
 
         args: Tuple[str, ...] = ('sdist', '--formats=zip')
-        if path.endswith(('.tgz', '.tar.gz')):
+        if package.filename.endswith(('.tgz', '.tar.gz')):
             args = ('sdist', '--formats=gztar')
-        elif path.endswith('.tar'):
+        elif package.filename.endswith('.tar'):
             args = ('sdist', '--formats=tar')
-        elif path.endswith('.whl'):
+        elif package.filename.endswith('.whl'):
             args = ('bdist_wheel',)
 
         subprocess.check_call((sys.executable, setup_py) + args, cwd=td)
         created, = os.listdir(os.path.join(td, 'dist'))
-        shutil.move(os.path.join(td, 'dist', created), path)
+        shutil.move(os.path.join(td, 'dist', created), os.path.join(path, package.filename))
