@@ -2,7 +2,7 @@
 minimal: venv
 
 venv: setup.py requirements-dev.txt Makefile tox.ini
-	tox --devenv venv
+	tox -e venv
 
 .PHONY: test
 test: venv
@@ -19,7 +19,7 @@ release: venv
 
 .PHONY: test-repo
 test-repo: venv
-	venv/bin/dumb-pypi \
+	venv/bin/python -m dumb_pypi.main \
 		--package-list-json testing/package-list-json \
 		--packages-url http://just.an.example/ \
 		--output-dir test-repo \

@@ -67,7 +67,7 @@ def install_pip(version, path):
     subprocess.check_call(('virtualenv', '-p', 'python2.7', path.strpath))
 
     pip = path.join('bin', 'pip').strpath
-    subprocess.check_call((pip, 'install', f'pip=={version}'))
+    subprocess.check_call((pip, 'install', '-i', 'https://pypi.org/simple', f'pip=={version}'))
 
     version_output = subprocess.check_output((pip, '--version'))
     assert version_output.split()[1].decode('ascii') == version
