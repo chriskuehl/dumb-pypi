@@ -1,0 +1,82 @@
+{% extends "_base.html" %}
+
+{% block title %}Changelog | {{title}}{% endblock %}
+
+{% block head_extra %}
+    <style>
+        .changelog {
+            border-collapse: collapse;
+        }
+
+        .changelog th, .changelog td {
+            border: solid 1px #333;
+            padding: 5px;
+            text-align: left;
+        }
+
+        .changelog th {
+            font-weight: bold;
+            background-color: #e7e7e7;
+        }
+
+        .changelog a {
+            color: black;
+        }
+
+        .pagination {
+            text-align: center;
+            font-size: 18px;
+            padding: 10px;
+            background-color: #ddd;
+        }
+
+        .pagination a {
+            color: black;
+            text-decoration: none;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .pagination a[href] {
+            background-color: #efefef;
+        }
+    </style>
+{% endblock %}
+
+{% macro pagination() %}
+    <p class="pagination">
+        <a {% if pagination_first %}href="{{pagination_first}}"{% endif %}>&laquo;</a>
+        <a {% if pagination_prev %}href="{{pagination_prev}}"{% endif %}>&larr;</a>
+        Page {{page_number}}/{{page_count}}
+        <a {% if pagination_next %}href="{{pagination_next}}"{% endif %}>&rarr;</a>
+        <a {% if pagination_last %}href="{{pagination_last}}"{% endif %}>&raquo;</a>
+    </p>
+{% endmacro %}
+
+{% block content %}
+    <h2>Package Changelog</h2>
+    {{pagination()}}
+    <table class="changelog">
+        <tr>
+            <th>Filename</th>
+            <th>Upload Time</th>
+            <th>Uploaded By</th>
+        </tr>
+
+        {% for file in files_newest_first %}
+            <tr>
+                <td><a href="{{file.url(packages_url)}}">{{file.filename}}</a></td>
+                <td class="nowrap">
+                    {% if file.upload_timestamp %}
+                        {{file.formatted_upload_time}}
+                    {% endif %}
+                </td>
+                <td class="nowrap">{{file.uploaded_by}}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    {{pagination()}}
+{% endblock %}
+
+{# vim: ft=jinja
+#}
