@@ -2,7 +2,9 @@
 import argparse
 import collections
 import contextlib
+import itertools
 import json
+import math
 import os.path
 import re
 import sys
@@ -26,10 +28,7 @@ import packaging.utils
 import packaging.version
 
 
-jinja_env = jinja2.Environment(
-    loader=jinja2.PackageLoader('dumb_pypi', 'templates'),
-    autoescape=True,
-)
+CHANGELOG_ENTRIES_PER_PAGE = 5000
 
 
 def remove_extension(name: str) -> str:
@@ -218,6 +217,15 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
     pypi = os.path.join(settings.output_dir, 'pypi')
     current_date = _format_datetime(datetime.utcnow())
 
+    jinja_env = jinja2.Environment(
+        loader=jinja2.PackageLoader('dumb_pypi', 'templates'),
+        autoescape=True,
+    )
+    jinja_env.globals['title'] = settings.title
+    jinja_env.globals['packages_url'] = settings.packages_url
+    jinja_env.globals['logo'] = settings.logo
+    jinja_env.globals['logo_width'] = settings.logo_width
+
     # Sorting package versions is actually pretty expensive, so we do it once
     # at the start.
     sorted_packages = {name: sorted(files) for name, files in packages.items()}
@@ -250,10 +258,36 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
             package_names=sorted(sorted_packages),
         ))
 
+    # /changelog
+    changelog = os.path.join(settings.output_dir, 'changelog')
+    os.makedirs(changelog, exist_ok=True)
+    files_newest_first = sorted(
+        itertools.chain.from_iterable(packages.values()),
+        key=lambda package: (package.upload_timestamp or 0, package.filename),
+        reverse=True,
+    )
+    page_count = math.ceil(len(files_newest_first) / CHANGELOG_ENTRIES_PER_PAGE)
+    for page_idx, start_idx in enumerate(range(0, len(files_newest_first), CHANGELOG_ENTRIES_PER_PAGE)):
+        chunk = files_newest_first[start_idx:start_idx + CHANGELOG_ENTRIES_PER_PAGE]
+        page_number = page_idx + 1
+        with atomic_write(os.path.join(changelog, f'page{page_number}.html')) as f:
+            pagination_first = "page1.html" if page_number != 1 else None
+            pagination_last = f"page{page_count}.html" if page_number != page_count else None
+            pagination_prev = f"page{page_number - 1}.html" if page_number != 1 else None
+            pagination_next = f"page{page_number + 1}.html" if page_number != page_count else None
+            f.write(jinja_env.get_template('changelog.html').render(
+                files_newest_first=chunk,
+                page_number=page_number,
+                page_count=page_count,
+                pagination_first=pagination_first,
+                pagination_last=pagination_last,
+                pagination_prev=pagination_prev,
+                pagination_next=pagination_next,
+            ))
+
     # /index.html
     with atomic_write(os.path.join(settings.output_dir, 'index.html')) as f:
         f.write(jinja_env.get_template('index.html').render(
-            title=settings.title,
             packages=sorted(
                 (
                     package,
@@ -261,8 +295,6 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
                 )
                 for package, sorted_versions in sorted_packages.items()
             ),
-            logo=settings.logo,
-            logo_width=settings.logo_width,
         ))
 
 
