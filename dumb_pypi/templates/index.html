@@ -51,7 +51,7 @@
 {% block content %}
     <div class="packages width" id="packages">
         {% for package, latest_version in packages %}
-            <a class="package {{loop.cycle('odd', 'even')}}" href="simple/{{package}}/" data-name="{{package}}">
+            <a class="package {{loop.cycle('odd', 'even')}}" href="simple/{{package}}/index.html" data-name="{{package}}">
                 <strong>{{package}}</strong> (latest version: {{latest_version}})
             </a>
         {% endfor %}
