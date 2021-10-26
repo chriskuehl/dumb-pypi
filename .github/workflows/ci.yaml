@@ -1,5 +1,9 @@
 name: Run Tests
-on: push
+on:
+  push:
+    branches: [master]
+    tags:
+  pull_request:
 jobs:
   tox:
     runs-on: ubuntu-latest
