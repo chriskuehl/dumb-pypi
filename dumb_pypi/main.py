@@ -231,6 +231,8 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
     sorted_packages = {name: sorted(files) for name, files in packages.items()}
 
     for package_name, sorted_files in sorted_packages.items():
+        latest_version = sorted_files[-1].version
+
         # /simple/{package}/index.html
         simple_package_dir = os.path.join(simple, package_name)
         os.makedirs(simple_package_dir, exist_ok=True)
@@ -241,6 +243,7 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
                 package_name=package_name,
                 files=sorted_files,
                 packages_url=settings.packages_url,
+                requirement=f'{package_name}=={latest_version}' if latest_version else package_name,
             ))
 
         # /pypi/{package}/json

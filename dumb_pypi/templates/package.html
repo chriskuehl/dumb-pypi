@@ -5,7 +5,16 @@
     </head>
     <body>
         <h1>{{package_name}}</h1>
-        <p>Latest version: {{(files|last).version}}</p>
+        <p>
+            Latest version:
+            <input
+                type="text"
+                value="{{requirement}}"
+                id="requirement"
+                style="font-family: monospace; width: {{requirement|length}}ch;"
+                readonly="readonly"
+            />
+        </p>
         {% if generate_timestamp %}
             <p>Generated on {{date}}.</p>
         {% endif %}
@@ -22,6 +31,10 @@
                 </li>
             {% endfor %}
         </ul>
+
+        <script>
+            document.getElementById('requirement').onfocus = (e) => e.target.select();
+        </script>
     </body>
 </html>
 
