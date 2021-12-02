@@ -10,8 +10,8 @@
             <input
                 type="text"
                 value="{{requirement}}"
+                id="requirement"
                 style="font-family: monospace; width: {{requirement|length}}ch;"
-                onfocus="this.select()"
                 readonly="readonly"
             />
         </p>
@@ -31,6 +31,10 @@
                 </li>
             {% endfor %}
         </ul>
+
+        <script>
+            document.getElementById('requirement').onfocus = (e) => e.target.select();
+        </script>
     </body>
 </html>
 
