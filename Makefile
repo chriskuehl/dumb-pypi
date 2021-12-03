@@ -2,7 +2,7 @@
 minimal: venv
 
 venv: setup.py requirements-dev.txt Makefile tox.ini
-	tox -e venv
+	tox --devenv $@
 
 .PHONY: test
 test: venv

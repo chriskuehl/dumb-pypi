@@ -184,10 +184,15 @@ def test_build_repo_smoke_test(tmpdir):
     assert tmpdir.join('simple', 'ocflib', 'index.html').check(file=True)
 
 
+def _write_json_package_list(path, packages):
+    path.open('w').write('\n'.join(json.dumps(package) for package in packages) + '\n')
+
+
 def test_build_repo_json_smoke_test(tmpdir):
     package_list = tmpdir.join('package-list')
-    package_list.write('\n'.join(
-        json.dumps(info) for info in (
+    _write_json_package_list(
+        package_list,
+        (
             {
                 'filename': 'ocflib-2016.12.10.1.48-py2.py3-none-any.whl',
                 'uploaded_by': 'ckuehl',
@@ -203,7 +208,7 @@ def test_build_repo_json_smoke_test(tmpdir):
                 'filename': 'scikit-learn-0.15.1.tar.gz',
             },
         )
-    ) + '\n')
+    )
     main.main((
         '--package-list-json', package_list.strpath,
         '--output-dir', tmpdir.strpath,
@@ -213,6 +218,128 @@ def test_build_repo_json_smoke_test(tmpdir):
     assert tmpdir.join('simple', 'index.html').check(file=True)
     assert tmpdir.join('simple', 'ocflib').check(dir=True)
     assert tmpdir.join('simple', 'ocflib', 'index.html').check(file=True)
+
+
+def test_build_repo_partial_rebuild(tmp_path):
+    previous_packages = tmp_path / 'previous-packages'
+    _write_json_package_list(
+        previous_packages,
+        (
+            {"filename": "a-0.0.1.tar.gz", "upload_timestamp": 1},
+            {"filename": "a-0.0.2.tar.gz", "upload_timestamp": 1},
+
+            {"filename": "b-0.0.1.tar.gz", "upload_timestamp": 1},
+            {"filename": "b-0.0.2.tar.gz", "upload_timestamp": 2},
+
+            {"filename": "c-0.0.1.tar.gz", "upload_timestamp": 1},
+            {"filename": "c-0.0.2.tar.gz", "upload_timestamp": 2},
+        ),
+    )
+
+    packages = tmp_path / 'packages'
+    _write_json_package_list(
+        packages,
+        (
+            # a is unchanged.
+            {"filename": "a-0.0.1.tar.gz", "upload_timestamp": 1},
+            {"filename": "a-0.0.2.tar.gz", "upload_timestamp": 1},
+
+            # b has a new version.
+            {"filename": "b-0.0.1.tar.gz", "upload_timestamp": 1},
+            {"filename": "b-0.0.2.tar.gz", "upload_timestamp": 2},
+            {"filename": "b-0.0.3.tar.gz", "upload_timestamp": 3},
+
+            # timestamp changed on c 0.0.2.
+            {"filename": "c-0.0.1.tar.gz", "upload_timestamp": 1},
+            {"filename": "c-0.0.2.tar.gz", "upload_timestamp": 999},
+
+            # d is new.
+            {"filename": "d-0.0.1.tar.gz", "upload_timestamp": 1},
+        ),
+    )
+
+    main.main((
+        '--previous-package-list-json', str(previous_packages),
+        '--package-list-json', str(packages),
+        '--output-dir', str(tmp_path),
+        '--packages-url', '../../pool/',
+    ))
+
+    assert (tmp_path / 'simple' / 'index.html').is_file()
+
+    # a is unchanged.
+    assert not (tmp_path / 'simple' / 'a').is_dir()
+
+    # b has a new version.
+    assert (tmp_path / 'simple' / 'b' / 'index.html').is_file()
+    assert (tmp_path / 'pypi' / 'b' / 'json').is_file()
+
+    # timestamp changed on c 0.0.2.
+    assert (tmp_path / 'simple' / 'c' / 'index.html').is_file()
+    assert (tmp_path / 'pypi' / 'c' / 'json').is_file()
+
+    # d is new.
+    assert (tmp_path / 'simple' / 'd' / 'index.html').is_file()
+    assert (tmp_path / 'pypi' / 'd' / 'json').is_file()
+
+    assert (tmp_path / 'index.html').is_file()
+    assert (tmp_path / 'changelog').is_dir()
+
+
+def test_build_repo_partial_rebuild_new_version_only(tmp_path):
+    package_list = (
+        {"filename": "a-0.0.1.tar.gz"},
+        {"filename": "b-0.0.1.tar.gz"},
+    )
+    previous_packages = tmp_path / 'previous-packages'
+    packages = tmp_path / 'packages'
+    _write_json_package_list(previous_packages, package_list)
+    _write_json_package_list(
+        packages,
+        package_list + ({"filename": "b-0.0.2.tar.gz"},),
+    )
+
+    main.main((
+        '--previous-package-list-json', str(previous_packages),
+        '--package-list-json', str(packages),
+        '--output-dir', str(tmp_path),
+        '--packages-url', '../../pool/',
+    ))
+
+    assert not (tmp_path / 'simple' / 'index.html').is_file()
+
+    assert not (tmp_path / 'simple' / 'a').is_dir()
+    assert not (tmp_path / 'pypi' / 'a').is_dir()
+
+    assert (tmp_path / 'simple' / 'b' / 'index.html').is_file()
+    assert (tmp_path / 'pypi' / 'b' / 'json').is_file()
+
+    assert (tmp_path / 'index.html').is_file()
+    assert (tmp_path / 'changelog').is_dir()
+
+
+def test_build_repo_partial_rebuild_no_changes_at_all(tmp_path):
+    package_list = (
+        {"filename": "a-0.0.1.tar.gz"},
+        {"filename": "b-0.0.1.tar.gz"},
+        {"filename": "c-0.0.1.tar.gz"},
+    )
+    previous_packages = tmp_path / 'previous-packages'
+    packages = tmp_path / 'packages'
+    _write_json_package_list(previous_packages, package_list)
+    _write_json_package_list(packages, package_list)
+
+    main.main((
+        '--previous-package-list-json', str(previous_packages),
+        '--package-list-json', str(packages),
+        '--output-dir', str(tmp_path),
+        '--packages-url', '../../pool/',
+    ))
+
+    assert not (tmp_path / 'index.html').is_file()
+    assert not (tmp_path / 'simple').is_dir()
+    assert not (tmp_path / 'changelog').is_dir()
+    assert not (tmp_path / 'pypi').is_dir()
 
 
 def test_build_repo_no_generate_timestamp(tmpdir):
