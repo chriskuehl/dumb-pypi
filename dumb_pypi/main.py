@@ -1,4 +1,12 @@
-"""A simple read-only PyPI static index server generator."""
+"""A simple read-only PyPI static index server generator.
+
+To generate the registry, pass a list of packages using either --package-list
+or --package-list-json.
+
+By default, the entire registry is rebuilt. If you want to do a rebuild of
+changed packages only, you can pass --previous-package-list(-json) with the old
+package list.
+"""
 import argparse
 import collections
 import contextlib
@@ -212,7 +220,11 @@ class Settings(NamedTuple):
     generate_timestamp: bool
 
 
-def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
+def build_repo(
+        packages: Dict[str, Set[Package]],
+        previous_packages: Optional[Dict[str, Set[Package]]],
+        settings: Settings,
+) -> None:
     simple = os.path.join(settings.output_dir, 'simple')
     pypi = os.path.join(settings.output_dir, 'pypi')
     current_date = _format_datetime(datetime.utcnow())
@@ -226,42 +238,51 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
     jinja_env.globals['logo'] = settings.logo
     jinja_env.globals['logo_width'] = settings.logo_width
 
+    # Short circuit if nothing changed at all.
+    if packages == previous_packages:
+        return
+
     # Sorting package versions is actually pretty expensive, so we do it once
     # at the start.
     sorted_packages = {name: sorted(files) for name, files in packages.items()}
 
-    for package_name, sorted_files in sorted_packages.items():
-        latest_version = sorted_files[-1].version
-
-        # /simple/{package}/index.html
-        simple_package_dir = os.path.join(simple, package_name)
-        os.makedirs(simple_package_dir, exist_ok=True)
-        with atomic_write(os.path.join(simple_package_dir, 'index.html')) as f:
-            f.write(jinja_env.get_template('package.html').render(
+    # /simple/index.html
+    # Rebuild if there are different package names.
+    if previous_packages is None or set(packages) != set(previous_packages):
+        os.makedirs(simple, exist_ok=True)
+        with atomic_write(os.path.join(simple, 'index.html')) as f:
+            f.write(jinja_env.get_template('simple.html').render(
                 date=current_date,
                 generate_timestamp=settings.generate_timestamp,
-                package_name=package_name,
-                files=sorted_files,
-                packages_url=settings.packages_url,
-                requirement=f'{package_name}=={latest_version}' if latest_version else package_name,
+                package_names=sorted(sorted_packages),
             ))
 
-        # /pypi/{package}/json
-        pypi_package_dir = os.path.join(pypi, package_name)
-        os.makedirs(pypi_package_dir, exist_ok=True)
-        with atomic_write(os.path.join(pypi_package_dir, 'json')) as f:
-            json.dump(_package_json(sorted_files, settings.packages_url), f)
+    for package_name, sorted_files in sorted_packages.items():
+        # Rebuild if the files are different for this package.
+        if previous_packages is None or previous_packages[package_name] != packages[package_name]:
+            latest_version = sorted_files[-1].version
 
-    # /simple/index.html
-    os.makedirs(simple, exist_ok=True)
-    with atomic_write(os.path.join(simple, 'index.html')) as f:
-        f.write(jinja_env.get_template('simple.html').render(
-            date=current_date,
-            generate_timestamp=settings.generate_timestamp,
-            package_names=sorted(sorted_packages),
-        ))
+            # /simple/{package}/index.html
+            simple_package_dir = os.path.join(simple, package_name)
+            os.makedirs(simple_package_dir, exist_ok=True)
+            with atomic_write(os.path.join(simple_package_dir, 'index.html')) as f:
+                f.write(jinja_env.get_template('package.html').render(
+                    date=current_date,
+                    generate_timestamp=settings.generate_timestamp,
+                    package_name=package_name,
+                    files=sorted_files,
+                    packages_url=settings.packages_url,
+                    requirement=f'{package_name}=={latest_version}' if latest_version else package_name,
+                ))
+
+            # /pypi/{package}/json
+            pypi_package_dir = os.path.join(pypi, package_name)
+            os.makedirs(pypi_package_dir, exist_ok=True)
+            with atomic_write(os.path.join(pypi_package_dir, 'json')) as f:
+                json.dump(_package_json(sorted_files, settings.packages_url), f)
 
     # /changelog
+    # Always rebuild (we would have short circuited already if nothing changed).
     changelog = os.path.join(settings.output_dir, 'changelog')
     os.makedirs(changelog, exist_ok=True)
     files_newest_first = sorted(
@@ -289,6 +310,7 @@ def build_repo(packages: Dict[str, Set[Package]], settings: Settings) -> None:
             ))
 
     # /index.html
+    # Always rebuild (we would have short circuited already if nothing changed).
     with atomic_write(os.path.join(settings.output_dir, 'index.html')) as f:
         f.write(jinja_env.get_template('index.html').render(
             packages=sorted(
@@ -331,7 +353,10 @@ def package_list_json(path: str) -> Dict[str, Set[Package]]:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
 
     package_input_group = parser.add_mutually_exclusive_group(required=True)
     package_input_group.add_argument(
@@ -345,6 +370,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help='path to a list of packages (one JSON object per line)',
         type=package_list_json,
         dest='packages',
+    )
+
+    previous_package_input_group = parser.add_mutually_exclusive_group(required=False)
+    previous_package_input_group.add_argument(
+        '--previous-package-list',
+        help='path to the previous list of packages (for partial rebuilds)',
+        type=package_list,
+        dest='previous_packages',
+    )
+    previous_package_input_group.add_argument(
+        '--previous-package-list-json',
+        help='path to the previous list of packages (for partial rebuilds)',
+        type=package_list_json,
+        dest='previous_packages',
     )
 
     parser.add_argument(
@@ -384,7 +423,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         logo_width=args.logo_width,
         generate_timestamp=args.generate_timestamp,
     )
-    build_repo(args.packages, settings)
+    build_repo(args.packages, args.previous_packages, settings)
     return 0
 
 

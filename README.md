@@ -123,6 +123,15 @@ you're using S3, one easy option is to store it at upload time as [S3
 metadata][s3-metadata].
 
 
+#### Partial rebuild support
+
+If you want to avoid rebuilding your entire registry constantly, you can pass
+the `--previous-package-list` (or `--previous-package-list-json`) argument to
+dumb-pypi, pointing to the list you used the last time you called dumb-pypi.
+Only the files relating to changed packages will be rebuilt, saving you time
+nd unnecessary I/O.
+
+
 ### Recommended nginx config
 
 You can serve the packages from any static webserver (including directly from
