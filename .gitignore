@@ -1,11 +1,8 @@
 *.egg-info
 *.py[co]
 /.coverage
-/.mypy_cache
-/.pytest_cache
 /.tox
 /build
 /dist
 /gh-pages
 /test-repo
-/venv
