@@ -1,1 +1,1 @@
-{"info": {"name": "py-pretty-1", "version": null}, "releases": {}, "urls": []}
+{"info": {"name": "py-pretty-1", "version": null, "requires_dist": ["urllib3 (<1.27,>=1.21.1)", "certifi (>=2017.4.17)\"", "chardet (<5,>=3.0.2) ; python_version < \"3\""], "requires_python": null, "platform": "UNKNOWN", "summary": null}, "releases": {}, "urls": []}
