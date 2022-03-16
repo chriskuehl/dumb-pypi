@@ -171,6 +171,25 @@ When running pip, pass `-i https://my-pypi-server/simple` or set the
 environment variable `PIP_INDEX_URL=https://my-pypi-server/simple`.
 
 
+### Known incompatibilities with public PyPI
+
+We try to maintain compatibility with the standard PyPI interface, but there
+are some incompatibilities currently which are hard to fix due to dumb-pypi's
+design:
+
+* While [both JSON API endpoints][json-api] are supported, many keys in the
+  JSON API are not present since they require inspecting packages which
+  dumb-pypi can't do. Some of these, like `requires_python` and
+  `requires_dist`, can be passed in as JSON.
+
+* The [per-version JSON API endpoint][per-version-api] only includes data about
+  the current requested version and not _all_ versions, unlike public PyPI. In
+  other words, if you access `/pypi/<package>/1.0.0/json`, you will only see
+  the `1.0.0` release under the `releases` key and not every release ever made.
+  The regular non-versioned API route (`/pypi/<package>/json`) will have all
+  releases.
+
+
 ## Contributing
 
 Thanks for contributing! To get started, run `make venv` and then `.
@@ -184,3 +203,5 @@ To run the tests, call `make test`. To run an individual test, you can do
 [rationale]: https://github.com/chriskuehl/dumb-pypi/blob/master/RATIONALE.md
 [pep503]: https://www.python.org/dev/peps/pep-0503/#normalized-names
 [s3-metadata]: https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html#UserMetadata
+[json-api]: https://warehouse.pypa.io/api-reference/json.html
+[per-version-api]: https://warehouse.pypa.io/api-reference/json.html#get--pypi--project_name---version--json

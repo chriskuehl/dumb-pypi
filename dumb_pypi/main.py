@@ -88,6 +88,7 @@ class Package(NamedTuple):
     version: Optional[str]
     parsed_version: packaging.version.Version
     hash: Optional[str]
+    requires_dist: Optional[Tuple[str, ...]]
     requires_python: Optional[str]
     upload_timestamp: Optional[int]
     uploaded_by: Optional[str]
@@ -137,11 +138,21 @@ class Package(NamedTuple):
         hash_part = f'#{self.hash}' if self.hash and include_hash else ''
         return f'{base_url.rstrip("/")}/{self.filename}{hash_part}'
 
+    @property
+    def packagetype(self) -> str:
+        if self.filename.endswith('.whl'):
+            return 'bdist_wheel'
+        elif self.filename.endswith('.egg'):
+            return 'bdist_egg'
+        else:
+            return 'sdist'
+
     def json_info(self, base_url: str) -> Dict[str, Any]:
         ret: Dict[str, Any] = {
             'filename': self.filename,
             'url': self.url(base_url, include_hash=False),
             'requires_python': self.requires_python,
+            'packagetype': self.packagetype,
         }
         if self.upload_timestamp is not None:
             ret['upload_time'] = self.formatted_upload_time
@@ -156,6 +167,7 @@ class Package(NamedTuple):
             *,
             filename: str,
             hash: Optional[str] = None,
+            requires_dist: Optional[Sequence[str]] = None,
             requires_python: Optional[str] = None,
             upload_timestamp: Optional[int] = None,
             uploaded_by: Optional[str] = None,
@@ -170,6 +182,7 @@ class Package(NamedTuple):
             version=version,
             parsed_version=packaging.version.parse(version or '0'),
             hash=hash,
+            requires_dist=tuple(requires_dist) if requires_dist is not None else None,
             requires_python=requires_python,
             upload_timestamp=upload_timestamp,
             uploaded_by=uploaded_by,
@@ -196,18 +209,50 @@ def _format_datetime(dt: datetime) -> str:
     return dt.strftime('%Y-%m-%d %H:%M:%S')
 
 
-def _package_json(files: List[Package], base_url: str) -> Dict[str, Any]:
+IMPORTANT_METADATA_FOR_INFO = frozenset((
+    'name',
+    'version',
+    'requires_dist',
+    'requires_python',
+))
+
+
+def _package_json(sorted_files: List[Package], base_url: str) -> Dict[str, Any]:
     # https://warehouse.pypa.io/api-reference/json.html
     # note: the full api contains much more, we only output the info we have
-    by_version: Dict[str, List[Dict[str, Any]]] = collections.defaultdict(list)
-    for file in files:
+    by_version: Dict[str, List[Package]] = collections.defaultdict(list)
+    for file in sorted_files:
         if file.version is not None:
-            by_version[file.version].append(file.json_info(base_url))
+            by_version[file.version].append(file)
+
+    # Find a file from the latest release to use for "info". We don't want to
+    # mix-and-match the metadata across releases since tools like Poetry rely
+    # on this, but we do want to pick the file in the release with the most
+    # populated metadata.
+    latest_file = sorted_files[-1]
+    if sorted_files[-1].version is not None:
+        latest_file = max(
+            by_version[sorted_files[-1].version],
+            key=lambda f: sum(bool(getattr(f, v)) for v in IMPORTANT_METADATA_FOR_INFO),
+        )
 
     return {
-        'info': {'name': files[0].name, 'version': files[0].version},
-        'releases': by_version,
-        'urls': by_version[files[0].version] if files[0].version else [],
+        'info': {
+            'name': latest_file.name,
+            'version': latest_file.version,
+            'requires_dist': latest_file.requires_dist,
+            'requires_python': latest_file.requires_python,
+            'platform': "UNKNOWN",
+            'summary': None,
+        },
+        'releases': {
+            version: [file_.json_info(base_url) for file_ in files]
+            for version, files in by_version.items()
+        },
+        'urls': [
+            file_.json_info(base_url)
+            for file_ in by_version[latest_file.version]
+        ] if latest_file and latest_file.version is not None else [],
     }
 
 
@@ -280,6 +325,19 @@ def build_repo(
             os.makedirs(pypi_package_dir, exist_ok=True)
             with atomic_write(os.path.join(pypi_package_dir, 'json')) as f:
                 json.dump(_package_json(sorted_files, settings.packages_url), f)
+
+            # /pypi/{package}/{version}/json
+            # TODO: Consider making this only generate JSON for the changed versions.
+            version_to_files = collections.defaultdict(list)
+            for file_ in sorted_files:
+                version_to_files[file_.version].append(file_)
+            for version, files in version_to_files.items():
+                if version is None:
+                    continue
+                version_dir = os.path.join(pypi_package_dir, version)
+                os.makedirs(version_dir, exist_ok=True)
+                with atomic_write(os.path.join(version_dir, 'json')) as f:
+                    json.dump(_package_json(files, settings.packages_url), f)
 
     # /changelog
     # Always rebuild (we would have short circuited already if nothing changed).
