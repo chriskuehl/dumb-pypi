@@ -43,6 +43,20 @@ lightdm
 postfix
 '''.splitlines()
 
+RANDOM_REQUIRES_DIST = [
+    None,
+    [],
+    [
+        'urllib3 (<1.27,>=1.21.1)',
+        'certifi (>=2017.4.17)"',
+        'chardet (<5,>=3.0.2) ; python_version < "3"',
+    ],
+    [
+        "PySocks (!=1.5.7,>=1.5.6) ; extra == 'socks'",
+        'win-inet-pton ; (sys_platform == "win32" and python_version == "2.7") and extra == \'socks\''
+    ],
+]
+
 
 with open('package-list') as f:
     lines = f.read().splitlines()
@@ -51,10 +65,12 @@ with open('package-list') as f:
 for line in lines:
     random_hash = hashlib.md5(str(random.randint(0, 1000000000000)).encode()).hexdigest()
     random_timestamp = random.randint(1000000000, 1515641096)
+    random_requires_dist = random.choice(RANDOM_REQUIRES_DIST)
     obj = {
         'filename': line,
         'hash': f'md5={random_hash}',
         'uploaded_by': random.choice(RANDOM_USERS),
         'upload_timestamp': random_timestamp,
+        'requires_dist': random_requires_dist,
     }
     print(json.dumps(obj, sort_keys=True))

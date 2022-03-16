@@ -89,6 +89,21 @@ def test_package_url_with_hash():
     assert package.url('/prefix') == '/prefix/f.tar.gz#sha256=badf00d'
 
 
+@pytest.mark.parametrize(
+    ('filename', 'expected'),
+    (
+        ("foo-1.0-py2.py3-none-any.whl", "bdist_wheel"),
+        ("foo.egg", "bdist_egg"),
+        ("foo.zip", "sdist"),
+        ("foo.tar.gz", "sdist"),
+        ("foo.tar", "sdist"),
+    ),
+)
+def test_package_packagetype(filename, expected):
+    package = main.Package.create(filename=filename)
+    assert package.packagetype == expected
+
+
 def test_package_info_all_info():
     package = main.Package.create(
         filename='f-1.0.tar.gz',
@@ -103,6 +118,7 @@ def test_package_info_all_info():
         'url': '/prefix/f-1.0.tar.gz',
         'requires_python': '>=3.6',
         'upload_time': '2018-06-09 23:26:45',
+        'packagetype': 'sdist',
     }
 
 
@@ -117,6 +133,7 @@ def test_package_info_minimal_info():
         'filename': 'f-1.0.tar.gz',
         'url': '/prefix/f-1.0.tar.gz',
         'requires_python': None,
+        'packagetype': 'sdist',
     }
 
 
@@ -124,7 +141,14 @@ def test_package_json_excludes_non_versioned_packages():
     pkgs = [main.Package.create(filename='f.tar.gz')]
     ret = main._package_json(pkgs, '/prefix')
     assert ret == {
-        'info': {'name': 'f', 'version': None},
+        'info': {
+            'name': 'f',
+            'version': None,
+            'requires_dist': None,
+            'requires_python': None,
+            'platform': 'UNKNOWN',
+            'summary': None,
+        },
         'releases': {},
         'urls': [],
     }
@@ -132,19 +156,39 @@ def test_package_json_excludes_non_versioned_packages():
 
 def test_package_json_packages_with_info():
     pkgs = [
-        main.Package.create(filename='f-2.0.tar.gz', requires_python='>=3.6'),
+        # These must be sorted oldest first.
         main.Package.create(filename='f-1.0-py2.py3-none-any.whl'),
         main.Package.create(filename='f-1.0.tar.gz'),
+        main.Package.create(
+            filename='f-2.0-py2.py3-none-any.whl',
+            requires_python='>=3.6',
+            requires_dist=['dumb-init'],
+        ),
+        main.Package.create(filename='f-2.0.tar.gz', requires_python='>=3.6'),
     ]
     ret = main._package_json(pkgs, '/prefix')
     assert ret == {
-        'info': {'name': 'f', 'version': '2.0'},
+        'info': {
+            'name': 'f',
+            'version': '2.0',
+            'requires_dist': ('dumb-init',),
+            'requires_python': '>=3.6',
+            'platform': 'UNKNOWN',
+            'summary': None,
+        },
         'releases': {
             '2.0': [
+                {
+                    'filename': 'f-2.0-py2.py3-none-any.whl',
+                    'url': '/prefix/f-2.0-py2.py3-none-any.whl',
+                    'requires_python': '>=3.6',
+                    'packagetype': 'bdist_wheel',
+                },
                 {
                     'filename': 'f-2.0.tar.gz',
                     'url': '/prefix/f-2.0.tar.gz',
                     'requires_python': '>=3.6',
+                    'packagetype': 'sdist',
                 },
             ],
             '1.0': [
@@ -152,19 +196,28 @@ def test_package_json_packages_with_info():
                     'filename': 'f-1.0-py2.py3-none-any.whl',
                     'url': '/prefix/f-1.0-py2.py3-none-any.whl',
                     'requires_python': None,
+                    'packagetype': 'bdist_wheel',
                 },
                 {
                     'filename': 'f-1.0.tar.gz',
                     'url': '/prefix/f-1.0.tar.gz',
                     'requires_python': None,
+                    'packagetype': 'sdist',
                 },
             ],
         },
         'urls': [
             {
+                'filename': 'f-2.0-py2.py3-none-any.whl',
+                'url': '/prefix/f-2.0-py2.py3-none-any.whl',
+                'requires_python': '>=3.6',
+                'packagetype': 'bdist_wheel',
+            },
+            {
                 'filename': 'f-2.0.tar.gz',
                 'url': '/prefix/f-2.0.tar.gz',
                 'requires_python': '>=3.6',
+                'packagetype': 'sdist',
             },
         ],
     }
@@ -182,6 +235,8 @@ def test_build_repo_smoke_test(tmpdir):
     assert tmpdir.join('simple', 'index.html').check(file=True)
     assert tmpdir.join('simple', 'ocflib').check(dir=True)
     assert tmpdir.join('simple', 'ocflib', 'index.html').check(file=True)
+    assert tmpdir.join('pypi', 'ocflib', 'json').check(file=True)
+    assert tmpdir.join('pypi', 'ocflib', '2016.12.10.1.48', 'json').check(file=True)
 
 
 def _write_json_package_list(path, packages):
@@ -199,6 +254,7 @@ def test_build_repo_json_smoke_test(tmpdir):
                 'upload_timestamp': 1515783971,
                 'hash': 'md5=b1946ac92492d2347c6235b4d2611184',
                 'requires_python': '>=3.6',
+                'requires_dist': ['dumb-init', 'flask'],
             },
             {
                 'filename': 'numpy-1.11.0rc1.tar.gz',
@@ -206,6 +262,10 @@ def test_build_repo_json_smoke_test(tmpdir):
             },
             {
                 'filename': 'scikit-learn-0.15.1.tar.gz',
+            },
+            {
+                # Version can't be parsed here but it's still allowed.
+                'filename': 'aspy.yaml.zip',
             },
         )
     )
@@ -218,6 +278,8 @@ def test_build_repo_json_smoke_test(tmpdir):
     assert tmpdir.join('simple', 'index.html').check(file=True)
     assert tmpdir.join('simple', 'ocflib').check(dir=True)
     assert tmpdir.join('simple', 'ocflib', 'index.html').check(file=True)
+    assert tmpdir.join('pypi', 'ocflib', 'json').check(file=True)
+    assert tmpdir.join('pypi', 'ocflib', '2016.12.10.1.48', 'json').check(file=True)
 
 
 def test_build_repo_partial_rebuild(tmp_path):
@@ -269,10 +331,12 @@ def test_build_repo_partial_rebuild(tmp_path):
 
     # a is unchanged.
     assert not (tmp_path / 'simple' / 'a').is_dir()
+    assert not (tmp_path / 'pypi' / 'a').is_dir()
 
     # b has a new version.
     assert (tmp_path / 'simple' / 'b' / 'index.html').is_file()
     assert (tmp_path / 'pypi' / 'b' / 'json').is_file()
+    assert (tmp_path / 'pypi' / 'b' / '0.0.3' / 'json').is_file()
 
     # timestamp changed on c 0.0.2.
     assert (tmp_path / 'simple' / 'c' / 'index.html').is_file()
@@ -281,6 +345,7 @@ def test_build_repo_partial_rebuild(tmp_path):
     # d is new.
     assert (tmp_path / 'simple' / 'd' / 'index.html').is_file()
     assert (tmp_path / 'pypi' / 'd' / 'json').is_file()
+    assert (tmp_path / 'pypi' / 'd' / '0.0.1' / 'json').is_file()
 
     assert (tmp_path / 'index.html').is_file()
     assert (tmp_path / 'changelog').is_dir()
@@ -313,6 +378,7 @@ def test_build_repo_partial_rebuild_new_version_only(tmp_path):
 
     assert (tmp_path / 'simple' / 'b' / 'index.html').is_file()
     assert (tmp_path / 'pypi' / 'b' / 'json').is_file()
+    assert (tmp_path / 'pypi' / 'b' / '0.0.1' / 'json').is_file()
 
     assert (tmp_path / 'index.html').is_file()
     assert (tmp_path / 'changelog').is_dir()
