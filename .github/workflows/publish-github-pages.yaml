@@ -1,4 +1,3 @@
-name: Publish example repo to GitHub Pages
 on:
   push:
     branches: [master]
