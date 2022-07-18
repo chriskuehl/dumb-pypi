@@ -7,9 +7,9 @@ from dumb_pypi import main
 
 @pytest.mark.parametrize(('filename', 'name', 'version'), (
     # wheels
-    ('dumb_init-1.2.0-py2.py3-none-manylinux1_x86_64.whl', 'dumb_init', '1.2.0'),
+    ('dumb_init-1.2.0-py2.py3-none-manylinux1_x86_64.whl', 'dumb-init', '1.2.0'),
     ('ocflib-2016.12.10.1.48-py2.py3-none-any.whl', 'ocflib', '2016.12.10.1.48'),
-    ('aspy.yaml-0.2.2-py2.py3-none-any.whl', 'aspy.yaml', '0.2.2'),
+    ('aspy.yaml-0.2.2-py2.py3-none-any.whl', 'aspy-yaml', '0.2.2'),
     (
         'numpy-1.11.1rc1-cp27-cp27m-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl',  # noqa
         'numpy',
@@ -58,7 +58,6 @@ def test_guess_name_version_from_filename_only_name(filename, name, version):
     'lol',
     'lol-sup',
     '-20160920.193125.zip',
-    'playlyfe-0.1.1-2.7.6-none-any.whl',  # 2.7.6 is not a valid python tag
 ))
 def test_guess_name_version_from_filename_invalid(filename):
     with pytest.raises(ValueError):
