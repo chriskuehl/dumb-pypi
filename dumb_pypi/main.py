@@ -30,7 +30,6 @@ from typing import Sequence
 from typing import Set
 from typing import Tuple
 
-import distlib.wheel
 import jinja2
 import packaging.utils
 import packaging.version
@@ -50,11 +49,8 @@ def guess_name_version_from_filename(
         filename: str,
 ) -> Tuple[str, Optional[str]]:
     if filename.endswith('.whl'):
-        m = distlib.wheel.FILENAME_RE.match(filename)
-        if m is not None:
-            return m.group('nm'), m.group('vn')
-        else:
-            raise ValueError(f'Invalid package name: {filename}')
+        name, version, _, _ = packaging.utils.parse_wheel_filename(filename)
+        return name, str(version)
     else:
         # These don't have a well-defined format like wheels do, so they are
         # sort of "best effort", with lots of tests to back them up.
