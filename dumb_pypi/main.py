@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import collections
 import contextlib
+import inspect
 import itertools
 import json
 import math
@@ -153,6 +154,14 @@ class Package(NamedTuple):
             algo, h = self.hash.split('=')
             ret['digests'] = {algo: h}
         return ret
+
+    def input_json(self) -> dict[str, Any]:
+        """A dict suitable for json lines."""
+        return {
+            k: getattr(self, k)
+            for k in inspect.getfullargspec(self.create).kwonlyargs
+            if getattr(self, k) is not None
+        }
 
     @classmethod
     def create(
@@ -372,6 +381,12 @@ def build_repo(
                 for package, sorted_versions in sorted_packages.items()
             ),
         ))
+
+    # /packages.json
+    # Always rebuild (we would have short circuited already if nothing changed).
+    with atomic_write(os.path.join(settings.output_dir, 'packages.json')) as f:
+        for package in itertools.chain.from_iterable(packages.values()):
+            f.write(f'{json.dumps(package.input_json())}\n')
 
 
 def _lines_from_path(path: str) -> list[str]:
