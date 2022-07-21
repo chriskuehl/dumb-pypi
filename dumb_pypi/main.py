@@ -7,6 +7,8 @@ By default, the entire registry is rebuilt. If you want to do a rebuild of
 changed packages only, you can pass --previous-package-list(-json) with the old
 package list.
 """
+from __future__ import annotations
+
 import argparse
 import collections
 import contextlib
@@ -19,16 +21,11 @@ import sys
 import tempfile
 from datetime import datetime
 from typing import Any
-from typing import Dict
 from typing import Generator
 from typing import IO
 from typing import Iterator
-from typing import List
 from typing import NamedTuple
-from typing import Optional
 from typing import Sequence
-from typing import Set
-from typing import Tuple
 
 import jinja2
 import packaging.utils
@@ -47,7 +44,7 @@ def remove_extension(name: str) -> str:
 
 def guess_name_version_from_filename(
         filename: str,
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, str | None]:
     if filename.endswith('.whl'):
         name, version, _, _ = packaging.utils.parse_wheel_filename(filename)
         return name, str(version)
@@ -81,20 +78,20 @@ def guess_name_version_from_filename(
 class Package(NamedTuple):
     filename: str
     name: str
-    version: Optional[str]
+    version: str | None
     parsed_version: packaging.version.Version
-    hash: Optional[str]
-    requires_dist: Optional[Tuple[str, ...]]
-    requires_python: Optional[str]
-    upload_timestamp: Optional[int]
-    uploaded_by: Optional[str]
+    hash: str | None
+    requires_dist: tuple[str, ...] | None
+    requires_python: str | None
+    upload_timestamp: int | None
+    uploaded_by: str | None
 
-    def __lt__(self, other: Tuple[Any, ...]) -> bool:
+    def __lt__(self, other: tuple[Any, ...]) -> bool:
         assert isinstance(other, Package), type(other)
         return self.sort_key < other.sort_key
 
     @property
-    def sort_key(self) -> Tuple[str, packaging.version.Version, str]:
+    def sort_key(self) -> tuple[str, packaging.version.Version, str]:
         """Sort key for a filename."""
         return (
             self.name,
@@ -143,8 +140,8 @@ class Package(NamedTuple):
         else:
             return 'sdist'
 
-    def json_info(self, base_url: str) -> Dict[str, Any]:
-        ret: Dict[str, Any] = {
+    def json_info(self, base_url: str) -> dict[str, Any]:
+        ret: dict[str, Any] = {
             'filename': self.filename,
             'url': self.url(base_url, include_hash=False),
             'requires_python': self.requires_python,
@@ -162,12 +159,12 @@ class Package(NamedTuple):
             cls,
             *,
             filename: str,
-            hash: Optional[str] = None,
-            requires_dist: Optional[Sequence[str]] = None,
-            requires_python: Optional[str] = None,
-            upload_timestamp: Optional[int] = None,
-            uploaded_by: Optional[str] = None,
-    ) -> 'Package':
+            hash: str | None = None,
+            requires_dist: Sequence[str] | None = None,
+            requires_python: str | None = None,
+            upload_timestamp: int | None = None,
+            uploaded_by: str | None = None,
+    ) -> Package:
         if not re.match(r'[a-zA-Z0-9_\-\.\+]+$', filename) or '..' in filename:
             raise ValueError(f'Unsafe package name: {filename}')
 
@@ -213,10 +210,10 @@ IMPORTANT_METADATA_FOR_INFO = frozenset((
 ))
 
 
-def _package_json(sorted_files: List[Package], base_url: str) -> Dict[str, Any]:
+def _package_json(sorted_files: list[Package], base_url: str) -> dict[str, Any]:
     # https://warehouse.pypa.io/api-reference/json.html
     # note: the full api contains much more, we only output the info we have
-    by_version: Dict[str, List[Package]] = collections.defaultdict(list)
+    by_version: dict[str, list[Package]] = collections.defaultdict(list)
     for file in sorted_files:
         if file.version is not None:
             by_version[file.version].append(file)
@@ -262,8 +259,8 @@ class Settings(NamedTuple):
 
 
 def build_repo(
-        packages: Dict[str, Set[Package]],
-        previous_packages: Optional[Dict[str, Set[Package]]],
+        packages: dict[str, set[Package]],
+        previous_packages: dict[str, set[Package]] | None,
         settings: Settings,
 ) -> None:
     simple = os.path.join(settings.output_dir, 'simple')
@@ -377,15 +374,15 @@ def build_repo(
         ))
 
 
-def _lines_from_path(path: str) -> List[str]:
+def _lines_from_path(path: str) -> list[str]:
     f = sys.stdin if path == '-' else open(path)
     return f.read().splitlines()
 
 
 def _create_packages(
-        package_infos: Iterator[Dict[str, Any]],
-) -> Dict[str, Set[Package]]:
-    packages: Dict[str, Set[Package]] = collections.defaultdict(set)
+        package_infos: Iterator[dict[str, Any]],
+) -> dict[str, set[Package]]:
+    packages: dict[str, set[Package]] = collections.defaultdict(set)
     for package_info in package_infos:
         try:
             package = Package.create(**package_info)
@@ -398,15 +395,15 @@ def _create_packages(
     return packages
 
 
-def package_list(path: str) -> Dict[str, Set[Package]]:
+def package_list(path: str) -> dict[str, set[Package]]:
     return _create_packages({'filename': line} for line in _lines_from_path(path))
 
 
-def package_list_json(path: str) -> Dict[str, Set[Package]]:
+def package_list_json(path: str) -> dict[str, set[Package]]:
     return _create_packages(json.loads(line) for line in _lines_from_path(path))
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawTextHelpFormatter,

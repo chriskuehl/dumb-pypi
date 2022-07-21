@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os.path
 import shutil
@@ -5,15 +7,13 @@ import subprocess
 import sys
 import tempfile
 from typing import NamedTuple
-from typing import Optional
-from typing import Tuple
 
 from dumb_pypi import main
 
 
 class FakePackage(NamedTuple):
     filename: str
-    requires_python: Optional[str] = None
+    requires_python: str | None = None
 
     @property
     def setup_py_contents(self):
@@ -40,7 +40,7 @@ def make_package(package: FakePackage, path: str) -> None:
         with open(setup_py, 'w') as f:
             f.write(package.setup_py_contents)
 
-        args: Tuple[str, ...] = ('sdist', '--formats=zip')
+        args: tuple[str, ...] = ('sdist', '--formats=zip')
         if package.filename.endswith(('.tgz', '.tar.gz')):
             args = ('sdist', '--formats=gztar')
         elif package.filename.endswith('.tar'):
