@@ -385,7 +385,7 @@ def build_repo(
     # /packages.json
     # Always rebuild (we would have short circuited already if nothing changed).
     with atomic_write(os.path.join(settings.output_dir, 'packages.json')) as f:
-        for package in itertools.chain.from_iterable(packages.values()):
+        for package in itertools.chain.from_iterable(sorted_packages.values()):
             f.write(f'{json.dumps(package.input_json())}\n')
 
 
