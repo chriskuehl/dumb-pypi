@@ -32,8 +32,8 @@ import jinja2
 import packaging.utils
 import packaging.version
 
-
 CHANGELOG_ENTRIES_PER_PAGE = 5000
+DIGIT_RE = re.compile('([0-9]+)', re.ASCII)
 
 
 def remove_extension(name: str) -> str:
@@ -76,6 +76,13 @@ def guess_name_version_from_filename(
         return name, version
 
 
+def _natural_key(s: str) -> tuple[int | str, ...]:
+    return tuple(
+        int(part) if part.isdigit() else part
+        for part in DIGIT_RE.split(s)
+    )
+
+
 class Package(NamedTuple):
     filename: str
     name: str
@@ -92,19 +99,17 @@ class Package(NamedTuple):
         return self.sort_key < other.sort_key
 
     @property
-    def sort_key(self) -> tuple[str, packaging.version.Version, str]:
+    def sort_key(self) -> tuple[str, packaging.version.Version, bool, tuple[str | int, ...], str]:
         """Sort key for a filename."""
         return (
             self.name,
             self.parsed_version,
-
-            # This looks ridiculous, but it's so that like extensions sort
-            # together when the name and version are the same (otherwise it
-            # depends on how the filename is normalized, which means sometimes
-            # wheels sort before tarballs, but not always).
-            # Alternatively we could just grab the extension, but that's less
-            # amusing, even though it took 6 lines of comments to explain this.
-            self.filename[::-1],
+            # sort wheels first
+            not self.filename.endswith('.whl'),
+            # natural sort within
+            _natural_key(self.filename),
+            # all things equal, use filename
+            self.filename,
         )
 
     @property
