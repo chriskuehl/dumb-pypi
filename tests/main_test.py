@@ -138,6 +138,33 @@ def test_package_info_minimal_info():
     }
 
 
+def test_input_json_all_info():
+    package = main.Package.create(
+        filename='f-1.0.tar.gz',
+        hash='sha256=deadbeef',
+        requires_dist=['aspy.yaml'],
+        requires_python='>=3.6',
+        uploaded_by='asottile',
+        upload_timestamp=1528586805,
+    )
+
+    assert package.input_json() == {
+        'filename': 'f-1.0.tar.gz',
+        'hash': 'sha256=deadbeef',
+        'requires_dist': ('aspy.yaml',),
+        'requires_python': '>=3.6',
+        'uploaded_by': 'asottile',
+        'upload_timestamp': 1528586805,
+    }
+    assert main.Package.create(**package.input_json()) == package
+
+
+def test_input_json_minimal():
+    package = main.Package.create(filename='f-1.0.tar.gz')
+    assert package.input_json() == {'filename': 'f-1.0.tar.gz'}
+    assert main.Package.create(**package.input_json()) == package
+
+
 def test_package_json_excludes_non_versioned_packages():
     pkgs = [main.Package.create(filename='f.tar.gz')]
     ret = main._package_json(pkgs, '/prefix')
@@ -232,6 +259,7 @@ def test_build_repo_smoke_test(tmpdir):
         '--output-dir', tmpdir.strpath,
         '--packages-url', '../../pool/',
     ))
+    assert tmpdir.join('packages.json').check(file=True)
     assert tmpdir.join('simple').check(dir=True)
     assert tmpdir.join('simple', 'index.html').check(file=True)
     assert tmpdir.join('simple', 'ocflib').check(dir=True)
