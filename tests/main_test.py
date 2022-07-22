@@ -7,6 +7,19 @@ import pytest
 from dumb_pypi import main
 
 
+@pytest.mark.parametrize(
+    ('s', 'expected'),
+    (
+        ('', ('',)),
+        ('a0', ('a', 0, '')),
+        # digits are always at even indexes so they compare nicely
+        ('0a1', ('', 0, 'a', 1, '')),
+    ),
+)
+def test_natural_key(s, expected):
+    assert main._natural_key(s) == expected
+
+
 @pytest.mark.parametrize(('filename', 'name', 'version'), (
     # wheels
     ('dumb_init-1.2.0-py2.py3-none-manylinux1_x86_64.whl', 'dumb-init', '1.2.0'),
@@ -507,6 +520,9 @@ def test_sorting():
             'fluffy-server-1.1.0.tar.gz',
             'fluffy_server-1.0.0-py2.py3-none-any.whl',
             'fluffy_server-1.2.0-py2.py3-none-any.whl',
+            'zpkg-1-cp38-cp38-manylinux_2_28_aarch64.whl',
+            'zpkg-1-cp39-cp39-manylinux_2_28_aarch64.whl',
+            'zpkg-1-cp310-cp310-manylinux_2_28_aarch64.whl',
         )
     ]
     sorted_names = [package.filename for package in sorted(test_packages)]
@@ -525,4 +541,7 @@ def test_sorting():
         'fluffy-server-10.0.0.tar.gz',
         'wsgi-mod-rpaf-1.0.1.tar.gz',
         'wsgi-mod-rpaf-2.0.0.tar.gz',
+        'zpkg-1-cp38-cp38-manylinux_2_28_aarch64.whl',
+        'zpkg-1-cp39-cp39-manylinux_2_28_aarch64.whl',
+        'zpkg-1-cp310-cp310-manylinux_2_28_aarch64.whl',
     ]
