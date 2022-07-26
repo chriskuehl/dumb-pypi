@@ -270,6 +270,7 @@ class Settings(NamedTuple):
     logo: str
     logo_width: int
     generate_timestamp: bool
+    disable_per_release_json: bool
 
 
 def build_repo(
@@ -334,17 +335,18 @@ def build_repo(
                 json.dump(_package_json(sorted_files, settings.packages_url), f)
 
             # /pypi/{package}/{version}/json
-            # TODO: Consider making this only generate JSON for the changed versions.
-            version_to_files = collections.defaultdict(list)
-            for file_ in sorted_files:
-                version_to_files[file_.version].append(file_)
-            for version, files in version_to_files.items():
-                if version is None:
-                    continue
-                version_dir = os.path.join(pypi_package_dir, version)
-                os.makedirs(version_dir, exist_ok=True)
-                with atomic_write(os.path.join(version_dir, 'json')) as f:
-                    json.dump(_package_json(files, settings.packages_url), f)
+            if not settings.disable_per_release_json:
+                # TODO: Consider making this only generate JSON for the changed versions.
+                version_to_files = collections.defaultdict(list)
+                for file_ in sorted_files:
+                    version_to_files[file_.version].append(file_)
+                for version, files in version_to_files.items():
+                    if version is None:
+                        continue
+                    version_dir = os.path.join(pypi_package_dir, version)
+                    os.makedirs(version_dir, exist_ok=True)
+                    with atomic_write(os.path.join(version_dir, 'json')) as f:
+                        json.dump(_package_json(files, settings.packages_url), f)
 
     # /changelog
     # Always rebuild (we would have short circuited already if nothing changed).
@@ -484,6 +486,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             'the output repeatable.'
         ),
     )
+    parser.add_argument(
+        '--no-per-release-json',
+        action='store_true',
+        help=(
+            'Disable per-release JSON API (/pypi/<package>/<version>/json).\n'
+            'This may be useful for large repositories because this metadata can be '
+            'a huge number of files for little benefit as almost no tools use it.'
+        ),
+    )
     args = parser.parse_args(argv)
 
     settings = Settings(
@@ -493,6 +504,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         logo=args.logo,
         logo_width=args.logo_width,
         generate_timestamp=args.generate_timestamp,
+        disable_per_release_json=args.no_per_release_json,
     )
     build_repo(args.packages, args.previous_packages, settings)
     return 0

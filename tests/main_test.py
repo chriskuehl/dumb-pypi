@@ -463,6 +463,19 @@ def test_build_repo_no_generate_timestamp(tmpdir):
         assert 'Generated on' not in tmpdir.join(p).read()
 
 
+def test_build_repo_no_per_release_json(tmp_path):
+    package_list = tmp_path / 'package-list'
+    package_list.write_text('pkg-1.0.tar.gz\n')
+    main.main((
+        '--package-list', str(package_list),
+        '--output-dir', str(tmp_path),
+        '--packages-url', '../../pool',
+        '--no-per-release-json',
+    ))
+    metadata_path = tmp_path / 'pypi' / 'pkg'
+    assert set(metadata_path.iterdir()) == {metadata_path / 'json'}
+
+
 def test_build_repo_even_with_bad_package_names(tmpdir):
     package_list = tmpdir.join('package-list')
     package_list.write('\n'.join((
