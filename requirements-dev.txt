@@ -1,3 +1,4 @@
+covdefaults
 coverage
 ephemeral-port-reserve
 pre-commit>=1.0
