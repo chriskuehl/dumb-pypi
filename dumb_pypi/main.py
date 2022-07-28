@@ -34,6 +34,16 @@ import packaging.version
 
 CHANGELOG_ENTRIES_PER_PAGE = 5000
 DIGIT_RE = re.compile('([0-9]+)', re.ASCII)
+# Copied from distlib/wheel.py
+WHEEL_FILENAME_RE = re.compile(r'''
+(?P<nm>[^-]+)
+-(?P<vn>\d+[^-]*)
+(-(?P<bn>\d+[^-]*))?
+-(?P<py>\w+\d+(\.\w+\d+)*)
+-(?P<bi>\w+)
+-(?P<ar>\w+(\.\w+)*)
+\.whl$
+''', re.IGNORECASE | re.VERBOSE)
 
 
 def remove_extension(name: str) -> str:
@@ -47,8 +57,13 @@ def guess_name_version_from_filename(
         filename: str,
 ) -> tuple[str, str | None]:
     if filename.endswith('.whl'):
-        name, version, _, _ = packaging.utils.parse_wheel_filename(filename)
-        return name, str(version)
+        # TODO: Switch to packaging.utils.parse_wheel_filename which enforces
+        # PEP440 versions for wheels.
+        m = WHEEL_FILENAME_RE.match(filename)
+        if m is not None:
+            return m.group('nm'), m.group('vn')
+        else:
+            raise ValueError(f'Invalid package name: {filename}')
     else:
         # These don't have a well-defined format like wheels do, so they are
         # sort of "best effort", with lots of tests to back them up.
