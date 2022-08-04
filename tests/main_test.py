@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 import pytest
 
@@ -356,6 +357,9 @@ def test_build_repo_partial_rebuild(tmp_path):
             {"filename": "b-0.0.1.tar.gz", "upload_timestamp": 1},
             {"filename": "b-0.0.2.tar.gz", "upload_timestamp": 2},
             {"filename": "b-0.0.3.tar.gz", "upload_timestamp": 3},
+            # also new, and to test sorting below
+            {"filename": "b-0.0.3-py39-none-any.whl", "upload_timestamp": 3},
+            {"filename": "b-0.0.3-py310-none-any.whl", "upload_timestamp": 3},
 
             # timestamp changed on c 0.0.2.
             {"filename": "c-0.0.1.tar.gz", "upload_timestamp": 1},
@@ -395,6 +399,26 @@ def test_build_repo_partial_rebuild(tmp_path):
 
     assert (tmp_path / 'index.html').is_file()
     assert (tmp_path / 'changelog').is_dir()
+
+    expected = [
+        # ts@999
+        '<a href="../../pool/c-0.0.2.tar.gz"',
+        # ts@3
+        '<a href="../../pool/b-0.0.3-py39-none-any.whl"',
+        '<a href="../../pool/b-0.0.3-py310-none-any.whl"',
+        '<a href="../../pool/b-0.0.3.tar.gz"',
+        # ts@2
+        '<a href="../../pool/b-0.0.2.tar.gz"',
+        # ts@1
+        '<a href="../../pool/a-0.0.1.tar.gz"',
+        '<a href="../../pool/a-0.0.2.tar.gz"',
+        '<a href="../../pool/b-0.0.1.tar.gz"',
+        '<a href="../../pool/c-0.0.1.tar.gz"',
+        '<a href="../../pool/d-0.0.1.tar.gz"',
+    ]
+    changelog_src = tmp_path.joinpath('changelog/page1.html').read_text()
+    found = re.findall('<a href="[^"]+"', changelog_src)
+    assert found == expected
 
 
 def test_build_repo_partial_rebuild_new_version_only(tmp_path):
