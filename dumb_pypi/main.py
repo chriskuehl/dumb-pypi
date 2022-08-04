@@ -369,8 +369,7 @@ def build_repo(
     os.makedirs(changelog, exist_ok=True)
     files_newest_first = sorted(
         itertools.chain.from_iterable(packages.values()),
-        key=lambda package: (package.upload_timestamp or 0, package.filename),
-        reverse=True,
+        key=lambda package: (-(package.upload_timestamp or 0), package),
     )
     page_count = math.ceil(len(files_newest_first) / CHANGELOG_ENTRIES_PER_PAGE)
     for page_idx, start_idx in enumerate(range(0, len(files_newest_first), CHANGELOG_ENTRIES_PER_PAGE)):
