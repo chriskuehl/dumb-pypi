@@ -108,6 +108,7 @@ class Package(NamedTuple):
     requires_python: str | None
     upload_timestamp: int | None
     uploaded_by: str | None
+    yanked_reason: str | None
 
     def __lt__(self, other: tuple[Any, ...]) -> bool:
         assert isinstance(other, Package), type(other)
@@ -167,6 +168,8 @@ class Package(NamedTuple):
             'url': self.url(base_url, include_hash=False),
             'requires_python': self.requires_python,
             'packagetype': self.packagetype,
+            'yanked': bool(self.yanked_reason),
+            'yanked_reason': self.yanked_reason,
         }
         if self.upload_timestamp is not None:
             ret['upload_time'] = self.formatted_upload_time
@@ -193,6 +196,7 @@ class Package(NamedTuple):
             requires_python: str | None = None,
             upload_timestamp: int | None = None,
             uploaded_by: str | None = None,
+            yanked_reason: str | None = None,
     ) -> Package:
         if not re.match(r'[a-zA-Z0-9_\-\.\+]+$', filename) or '..' in filename:
             raise ValueError(f'Unsafe package name: {filename}')
@@ -208,6 +212,7 @@ class Package(NamedTuple):
             requires_python=requires_python,
             upload_timestamp=upload_timestamp,
             uploaded_by=uploaded_by,
+            yanked_reason=yanked_reason,
         )
 
 
@@ -266,6 +271,8 @@ def _package_json(sorted_files: list[Package], base_url: str) -> dict[str, Any]:
             'requires_python': latest_file.requires_python,
             'platform': "UNKNOWN",
             'summary': None,
+            'yanked': bool(latest_file.yanked_reason),
+            'yanked_reason': latest_file.yanked_reason,
         },
         'releases': {
             version: [file_.json_info(base_url) for file_ in files]
