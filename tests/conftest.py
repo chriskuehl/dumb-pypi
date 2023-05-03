@@ -11,14 +11,7 @@ import pytest
 import requests
 
 
-PIP_FULL_NORMALIZATION = ('9.0.1', '8.1.2')
-PIP_PARTIAL_NORMALIZATION = ('8.0.0', '6.0')
-PIP_NO_NORMALIZATION = ('1.5.5',)
-ALL_PIPS = (
-    PIP_FULL_NORMALIZATION +
-    PIP_PARTIAL_NORMALIZATION +
-    PIP_NO_NORMALIZATION
-)
+PIP_TEST_VERSION = '23.1.2'
 
 
 UrlAndPath = collections.namedtuple('UrlAndPath', ('url', 'path'))
@@ -65,8 +58,7 @@ def tmpweb(running_server, tmpdir):
 
 
 def install_pip(version, path):
-    # Old versions of pip don't work with python3.6.
-    subprocess.check_call(('virtualenv', '-p', 'python2.7', path.strpath))
+    subprocess.check_call(('virtualenv', '-p', sys.executable, path.strpath))
 
     pip = path.join('bin', 'pip').strpath
     subprocess.check_call((pip, 'install', '-i', 'https://pypi.org/simple', f'pip=={version}'))
@@ -77,20 +69,5 @@ def install_pip(version, path):
 
 
 @pytest.fixture(scope='session')
-def pip_versions(tmpdir_factory):
-    return {
-        version: install_pip(version, tmpdir_factory.mktemp(f'pip-{version}'))
-        for version in ALL_PIPS
-    }
-
-
-@pytest.fixture(scope='session', params=ALL_PIPS)
-def all_pips(request, pip_versions):
-    version = request.param
-    return pip_versions[version]
-
-
-@pytest.fixture(scope='session', params=PIP_FULL_NORMALIZATION)
-def modern_pips(request, pip_versions):
-    version = request.param
-    return pip_versions[version]
+def pip(tmpdir_factory):
+    return install_pip(PIP_TEST_VERSION, tmpdir_factory.mktemp('pip'))
