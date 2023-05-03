@@ -129,6 +129,7 @@ def test_package_info_all_info():
         hash='sha256=deadbeef',
         requires_python='>=3.6',
         upload_timestamp=1528586805,
+        yanked_reason='Wrong Python Pinning',
     )
     ret = package.json_info('/prefix')
     assert ret == {
@@ -138,6 +139,8 @@ def test_package_info_all_info():
         'requires_python': '>=3.6',
         'upload_time': '2018-06-09 23:26:45',
         'packagetype': 'sdist',
+        'yanked': True,
+        'yanked_reason': 'Wrong Python Pinning',
     }
 
 
@@ -153,6 +156,8 @@ def test_package_info_minimal_info():
         'url': '/prefix/f-1.0.tar.gz',
         'requires_python': None,
         'packagetype': 'sdist',
+        'yanked': False,
+        'yanked_reason': None,
     }
 
 
@@ -164,6 +169,7 @@ def test_input_json_all_info():
         requires_python='>=3.6',
         uploaded_by='asottile',
         upload_timestamp=1528586805,
+        yanked_reason='Wrong Python Pinning',
     )
 
     assert package.input_json() == {
@@ -173,6 +179,7 @@ def test_input_json_all_info():
         'requires_python': '>=3.6',
         'uploaded_by': 'asottile',
         'upload_timestamp': 1528586805,
+        'yanked_reason': 'Wrong Python Pinning',
     }
     assert main.Package.create(**package.input_json()) == package
 
@@ -194,6 +201,8 @@ def test_package_json_excludes_non_versioned_packages():
             'requires_python': None,
             'platform': 'UNKNOWN',
             'summary': None,
+            'yanked': False,
+            'yanked_reason': None,
         },
         'releases': {},
         'urls': [],
@@ -221,6 +230,8 @@ def test_package_json_packages_with_info():
             'requires_python': '>=3.6',
             'platform': 'UNKNOWN',
             'summary': None,
+            'yanked': False,
+            'yanked_reason': None,
         },
         'releases': {
             '2.0': [
@@ -229,12 +240,16 @@ def test_package_json_packages_with_info():
                     'url': '/prefix/f-2.0-py2.py3-none-any.whl',
                     'requires_python': '>=3.6',
                     'packagetype': 'bdist_wheel',
+                    'yanked': False,
+                    'yanked_reason': None,
                 },
                 {
                     'filename': 'f-2.0.tar.gz',
                     'url': '/prefix/f-2.0.tar.gz',
                     'requires_python': '>=3.6',
                     'packagetype': 'sdist',
+                    'yanked': False,
+                    'yanked_reason': None,
                 },
             ],
             '1.0': [
@@ -243,12 +258,16 @@ def test_package_json_packages_with_info():
                     'url': '/prefix/f-1.0-py2.py3-none-any.whl',
                     'requires_python': None,
                     'packagetype': 'bdist_wheel',
+                    'yanked': False,
+                    'yanked_reason': None,
                 },
                 {
                     'filename': 'f-1.0.tar.gz',
                     'url': '/prefix/f-1.0.tar.gz',
                     'requires_python': None,
                     'packagetype': 'sdist',
+                    'yanked': False,
+                    'yanked_reason': None,
                 },
             ],
         },
@@ -258,12 +277,16 @@ def test_package_json_packages_with_info():
                 'url': '/prefix/f-2.0-py2.py3-none-any.whl',
                 'requires_python': '>=3.6',
                 'packagetype': 'bdist_wheel',
+                'yanked': False,
+                'yanked_reason': None,
             },
             {
                 'filename': 'f-2.0.tar.gz',
                 'url': '/prefix/f-2.0.tar.gz',
                 'requires_python': '>=3.6',
                 'packagetype': 'sdist',
+                'yanked': False,
+                'yanked_reason': None,
             },
         ],
     }
@@ -306,6 +329,7 @@ def test_build_repo_json_smoke_test(tmpdir):
             {
                 'filename': 'numpy-1.11.0rc1.tar.gz',
                 'upload_timestamp': 1515783971,
+                'yanked_reason': 'Wrong Python Pinning',
             },
             {
                 'filename': 'scikit-learn-0.15.1.tar.gz',

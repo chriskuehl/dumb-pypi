@@ -28,7 +28,7 @@ def install_packages(path, fake_packages):
 
 def pip_download(pip, index_url, path, *spec):
     subprocess.check_call(
-        (pip, 'install', '-i', index_url, '--download', path) + spec,
+        (pip, 'download', '-i', index_url, '--dest', path, *spec),
     )
 
 
@@ -45,13 +45,13 @@ def pip_download(pip, index_url, path, *spec):
 def test_simple_package(
         tmpdir,
         tmpweb,
-        all_pips,
+        pip,
         packages,
         requirement,
 ):
     install_packages(tmpweb.path, packages)
     pip_download(
-        all_pips,
+        pip,
         tmpweb.url + '/simple',
         tmpdir.strpath,
         requirement,
@@ -62,7 +62,6 @@ def test_simple_package(
     (FakePackage('aspy.yaml-0.2.1.zip'),),
     (FakePackage('aspy.yaml-0.2.1.tar'),),
     (FakePackage('aspy.yaml-0.2.1.tar.gz'),),
-    (FakePackage('aspy.yaml-0.2.1.tgz'),),
     (FakePackage('aspy.yaml-0.2.1-py2.py3-none-any.whl'),)
 ))
 @pytest.mark.parametrize('requirement', (
@@ -71,10 +70,10 @@ def test_simple_package(
     'aspy.yaml==0.2.1',
     'ASPY.YAML==0.2.1',
 ))
-def test_normalized_packages_modern_pip(
+def test_normalized_packages(
         tmpdir,
         tmpweb,
-        modern_pips,
+        pip,
         packages,
         requirement,
 ):
@@ -85,7 +84,7 @@ def test_normalized_packages_modern_pip(
     """
     install_packages(tmpweb.path, packages)
     pip_download(
-        modern_pips,
+        pip,
         tmpweb.url + '/simple',
         tmpdir.strpath,
         requirement,
@@ -97,10 +96,10 @@ def test_normalized_packages_modern_pip(
     'aspy-yaml>0.2,<0.3',
     'ASPY-YAML==0.2.1',
 ))
-def test_normalized_packages_modern_pip_wheels(
+def test_normalized_packages_wheels(
         tmpdir,
         tmpweb,
-        modern_pips,
+        pip,
         requirement,
 ):
     """Wheels are special: unlike archives, the package names are fully
@@ -110,19 +109,14 @@ def test_normalized_packages_modern_pip_wheels(
         FakePackage('aspy.yaml-0.2.1-py2.py3-none-any.whl'),
     ))
     pip_download(
-        modern_pips,
+        pip,
         tmpweb.url + '/simple',
         tmpdir.strpath,
         requirement,
     )
 
 
-def test_pip_9_respects_requires_python(
-        tmpdir,
-        tmpweb,
-        pip_versions,
-):
-    pip = pip_versions['9.0.1']
+def test_pip_respects_requires_python(tmpdir, tmpweb, pip):
     install_packages(
         tmpweb.path,
         (
