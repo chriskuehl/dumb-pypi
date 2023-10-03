@@ -26,6 +26,9 @@
                         {%- if file.requires_python %}
                             data-requires-python="{{file.requires_python}}"
                         {%- endif %}
+                        {%- if file.core_metadata %}
+                            data-core-metadata="{{file.core_metadata}}"
+                        {%- endif %}
                         {%- if file.yanked_reason %}
                             data-yanked="{{file.yanked_reason}}"
                         {%- endif %}

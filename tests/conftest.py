@@ -11,7 +11,7 @@ import pytest
 import requests
 
 
-PIP_TEST_VERSION = '23.1.2'
+PIP_TEST_VERSION = '23.2.1'
 
 
 UrlAndPath = collections.namedtuple('UrlAndPath', ('url', 'path'))

@@ -106,6 +106,7 @@ class Package(NamedTuple):
     hash: str | None
     requires_dist: tuple[str, ...] | None
     requires_python: str | None
+    core_metadata: str | None
     upload_timestamp: int | None
     uploaded_by: str | None
     yanked_reason: str | None
@@ -197,6 +198,7 @@ class Package(NamedTuple):
             upload_timestamp: int | None = None,
             uploaded_by: str | None = None,
             yanked_reason: str | None = None,
+            core_metadata: str | None = None,
     ) -> Package:
         if not re.match(r'[a-zA-Z0-9_\-\.\+]+$', filename) or '..' in filename:
             raise ValueError(f'Unsafe package name: {filename}')
@@ -210,6 +212,7 @@ class Package(NamedTuple):
             hash=hash,
             requires_dist=tuple(requires_dist) if requires_dist is not None else None,
             requires_python=requires_python,
+            core_metadata=core_metadata,
             upload_timestamp=upload_timestamp,
             uploaded_by=uploaded_by,
             yanked_reason=yanked_reason,

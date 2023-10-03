@@ -108,8 +108,19 @@ format listed above of one filename per line, format your file with one JSON
 object per line, like this:
 
 ```json
-{"filename": "dumb-init-1.1.2.tar.gz", "hash": "md5=<hash>", "requires_dist": ["cfgv"], "requires_python": ">=3.6", "uploaded_by": "ckuehl", "upload_timestamp": 1512539924, "yanked_reason": null}
+{"filename": "dumb-init-1.1.2.tar.gz", "hash": "sha256=<hash>", "requires_python": ">=3.6", "uploaded_by": "ckuehl", "upload_timestamp": 1512539924, "yanked_reason": null, "core_metadata": "sha256=<hash>"}
 ```
+
+| Key                  | Required? | Description |
+| -------------------- | --------- | ----------- |
+| `filename`           | Yes       | Name of the file |
+| `hash`               | No        | Hash of the file in the format `<hashalgo>=<hashvalue>` |
+| `requires_python`    | No        | Python requirement string for the package ([PEP345](https://peps.python.org/pep-0345/#requires-python)) |
+| `core_metadata`      | No        | Either string `"true"` or a string in the format `<hashalgo>=<hashvalue>` to indicate metadata is available for this file by appending `.metadata` to the file URL ([PEP658](https://peps.python.org/pep-0658/), [PEP714](https://peps.python.org/pep-0714/)) |
+| `uploaded_by`        | No        | Freeform text to indicate an uploader of the package; only shown on web UI |
+| `upload_timestamp`   | No        | UNIX timestamp to indicate upload time of the package |
+| `yanked_reason`      | No        | Freeform text to indicate the package is yanked for the given reason ([PEP592](https://peps.python.org/pep-0592/)) |
+| `requires_dist`      | No        | _(Deprecated)_ Array of requires_dist dependencies ([PEP345](https://peps.python.org/pep-0345/#requires-python)), used only in the JSON API; consider using `dist_info_metadata` instead |
 
 The `filename` key is required. All other keys are optional and will be used to
 provide additional information in your generated repository. This extended
