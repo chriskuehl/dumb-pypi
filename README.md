@@ -120,7 +120,7 @@ object per line, like this:
 | `uploaded_by`        | No        | Freeform text to indicate an uploader of the package; only shown on web UI |
 | `upload_timestamp`   | No        | UNIX timestamp to indicate upload time of the package |
 | `yanked_reason`      | No        | Freeform text to indicate the package is yanked for the given reason ([PEP592](https://peps.python.org/pep-0592/)) |
-| `requires_dist`      | No        | _(Deprecated)_ Array of requires_dist dependencies ([PEP345](https://peps.python.org/pep-0345/#requires-python)), used only in the JSON API; consider using `dist_info_metadata` instead |
+| `requires_dist`      | No        | _(Deprecated)_ Array of requires_dist dependencies ([PEP345](https://peps.python.org/pep-0345/#requires-python)), used only in the JSON API; consider using `core_metadata` instead |
 
 The `filename` key is required. All other keys are optional and will be used to
 provide additional information in your generated repository. This extended
