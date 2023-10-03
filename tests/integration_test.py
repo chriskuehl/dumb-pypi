@@ -136,3 +136,22 @@ def test_pip_respects_requires_python(tmpdir, tmpweb, pip):
     )
     downloaded_package, = tmpdir.listdir(fil=os.path.isfile)
     assert downloaded_package.basename == 'foo-2.tar.gz'
+
+
+def test_pip_uses_core_metadata(capfd, tmpdir, tmpweb, pip):
+    install_packages(
+        tmpweb.path,
+        (FakePackage('foo-1-py2.py3-none-any.whl'),)
+    )
+    pip_download(
+        pip,
+        tmpweb.url + '/simple',
+        tmpdir.strpath,
+        'foo',
+    )
+    downloaded_package, = tmpdir.listdir(fil=os.path.isfile)
+    assert downloaded_package.basename == 'foo-1-py2.py3-none-any.whl'
+    assert (
+        f'Obtaining dependency information for foo from {tmpweb.url}/pool/foo-1-py2.py3-none-any.whl.metadata'
+        in capfd.readouterr().out
+    )

@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 from typing import NamedTuple
 
 from dumb_pypi import main
@@ -26,6 +27,7 @@ class FakePackage(NamedTuple):
         return json.dumps({
             'filename': self.filename,
             'requires_python': self.requires_python,
+            'core_metadata': 'true' if self.filename.endswith('.whl') else None,
         })
 
 
@@ -50,4 +52,16 @@ def make_package(package: FakePackage, path: str) -> None:
 
         subprocess.check_call((sys.executable, setup_py) + args, cwd=td)
         created, = os.listdir(os.path.join(td, 'dist'))
-        shutil.move(os.path.join(td, 'dist', created), os.path.join(path, package.filename))
+        dest = os.path.join(path, package.filename)
+        shutil.move(os.path.join(td, 'dist', created), dest)
+
+        # Extract PEP658 metadata.
+        if dest.endswith('.whl'):
+            with zipfile.ZipFile(dest) as zf:
+                metadata_path, = (
+                    name
+                    for name in zf.namelist()
+                    if name.endswith('.dist-info/METADATA')
+                )
+                with open(f'{dest}.metadata', 'wb') as f:
+                    f.write(zf.read(metadata_path))
