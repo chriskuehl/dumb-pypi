@@ -220,7 +220,7 @@ class Package(NamedTuple):
 
 
 @contextlib.contextmanager
-def atomic_write(path: str) -> Generator[IO[str], None, None]:
+def atomic_write(path: str) -> Generator[IO[str]]:
     tmp = tempfile.mktemp(
         prefix='.' + os.path.basename(path),
         dir=os.path.dirname(path),
