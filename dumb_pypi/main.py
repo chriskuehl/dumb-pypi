@@ -20,13 +20,13 @@ import os.path
 import re
 import sys
 import tempfile
+from collections.abc import Generator
+from collections.abc import Iterator
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
-from typing import Generator
 from typing import IO
-from typing import Iterator
 from typing import NamedTuple
-from typing import Sequence
 
 import jinja2
 import packaging.utils
