@@ -29,7 +29,7 @@ Linux distributions have been doing this right for decades. Debian has a system
 of hundreds of mirrors, and the entire thing is powered entirely by some fancy
 `rsync` commands.
 
-For the maintainer of a PyPI repositry, `dumb-pypi` has some nice properties:
+For the maintainer of a PyPI repository, `dumb-pypi` has some nice properties:
 
 * **File serving is extremely fast.** nginx can serve your static files faster
   than you'd ever need. In practice, there are almost no limits on the number
