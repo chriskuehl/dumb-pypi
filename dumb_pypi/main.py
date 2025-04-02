@@ -23,19 +23,16 @@ import tempfile
 from collections.abc import Generator
 from collections.abc import Iterator
 from collections.abc import Sequence
-from datetime import datetime
-from typing import Any
-from typing import IO
-from typing import NamedTuple
-
+import datetime
+from typing import Any, IO, NamedTuple, Pattern
 import jinja2
 import packaging.utils
 import packaging.version
 
 CHANGELOG_ENTRIES_PER_PAGE = 5000
-DIGIT_RE = re.compile('([0-9]+)', re.ASCII)
+DIGIT_RE: Pattern[str] = re.compile('([0-9]+)', re.ASCII)
 # Copied from distlib/wheel.py
-WHEEL_FILENAME_RE = re.compile(r'''
+WHEEL_FILENAME_RE: Pattern[str] = re.compile(r'''
 (?P<nm>[^-]+)
 -(?P<vn>\d+[^-]*)
 (-(?P<bn>\d+[^-]*))?
@@ -132,7 +129,7 @@ class Package(NamedTuple):
     @property
     def formatted_upload_time(self) -> str:
         assert self.upload_timestamp is not None
-        dt = datetime.utcfromtimestamp(self.upload_timestamp)
+        dt = datetime.datetime.utcfromtimestamp(self.upload_timestamp)
         return _format_datetime(dt)
 
     @property
@@ -235,7 +232,7 @@ def atomic_write(path: str) -> Generator[IO[str]]:
         os.replace(tmp, path)
 
 
-def _format_datetime(dt: datetime) -> str:
+def _format_datetime(dt: datetime.datetime) -> str:
     return dt.strftime('%Y-%m-%d %H:%M:%S')
 
 
@@ -305,7 +302,7 @@ def build_repo(
 ) -> None:
     simple = os.path.join(settings.output_dir, 'simple')
     pypi = os.path.join(settings.output_dir, 'pypi')
-    current_date = _format_datetime(datetime.utcnow())
+    current_date = _format_datetime(datetime.datetime.now(datetime.UTC))
 
     jinja_env = jinja2.Environment(
         loader=jinja2.PackageLoader('dumb_pypi', 'templates'),
