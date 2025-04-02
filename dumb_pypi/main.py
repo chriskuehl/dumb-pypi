@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import collections
 import contextlib
+import datetime
 import inspect
 import itertools
 import json
@@ -23,8 +24,11 @@ import tempfile
 from collections.abc import Generator
 from collections.abc import Iterator
 from collections.abc import Sequence
-import datetime
-from typing import Any, IO, NamedTuple, Pattern
+from re import Pattern
+from typing import Any
+from typing import IO
+from typing import NamedTuple
+
 import jinja2
 import packaging.utils
 import packaging.version
