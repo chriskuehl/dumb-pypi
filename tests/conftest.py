@@ -11,7 +11,7 @@ import pytest
 import requests
 
 
-PIP_TEST_VERSION = '23.2.1'
+PIP_TEST_VERSION = '25.1.1'
 
 
 UrlAndPath = collections.namedtuple('UrlAndPath', ('url', 'path'))
@@ -62,6 +62,7 @@ def install_pip(version, path):
 
     pip = path.join('bin', 'pip').strpath
     subprocess.check_call((pip, 'install', '-i', 'https://pypi.org/simple', f'pip=={version}'))
+    subprocess.check_call((pip, 'install', '-i', 'https://pypi.org/simple', 'setuptools'))
 
     version_output = subprocess.check_output((pip, '--version'))
     assert version_output.split()[1].decode('ascii') == version
