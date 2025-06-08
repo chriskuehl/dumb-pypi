@@ -28,7 +28,7 @@ def install_packages(path, fake_packages):
 
 def pip_download(pip, index_url, path, *spec):
     subprocess.check_call(
-        (pip, 'download', '-i', index_url, '--dest', path, *spec),
+        (pip, 'download', '-i', index_url, '--dest', path, *spec, '--no-use-pep517'),
     )
 
 
@@ -152,6 +152,6 @@ def test_pip_uses_core_metadata(capfd, tmpdir, tmpweb, pip):
     downloaded_package, = tmpdir.listdir(fil=os.path.isfile)
     assert downloaded_package.basename == 'foo-1-py2.py3-none-any.whl'
     assert (
-        f'Obtaining dependency information for foo from {tmpweb.url}/pool/foo-1-py2.py3-none-any.whl.metadata'
+        f'Downloading {tmpweb.url}/pool/foo-1-py2.py3-none-any.whl.metadata'
         in capfd.readouterr().out
     )
