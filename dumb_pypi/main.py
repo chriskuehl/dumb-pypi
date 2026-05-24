@@ -23,7 +23,7 @@ import tempfile
 from collections.abc import Generator
 from collections.abc import Iterator
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from typing import IO
 from typing import NamedTuple
@@ -132,7 +132,7 @@ class Package(NamedTuple):
     @property
     def formatted_upload_time(self) -> str:
         assert self.upload_timestamp is not None
-        dt = datetime.utcfromtimestamp(self.upload_timestamp)
+        dt = datetime.fromtimestamp(self.upload_timestamp, timezone.utc)
         return _format_datetime(dt)
 
     @property
@@ -305,7 +305,7 @@ def build_repo(
 ) -> None:
     simple = os.path.join(settings.output_dir, 'simple')
     pypi = os.path.join(settings.output_dir, 'pypi')
-    current_date = _format_datetime(datetime.utcnow())
+    current_date = _format_datetime(datetime.now(timezone.utc))
 
     jinja_env = jinja2.Environment(
         loader=jinja2.PackageLoader('dumb_pypi', 'templates'),
