@@ -23,7 +23,8 @@ import tempfile
 from collections.abc import Generator
 from collections.abc import Iterator
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import datetime
+from datetime import timezone
 from typing import Any
 from typing import IO
 from typing import NamedTuple
