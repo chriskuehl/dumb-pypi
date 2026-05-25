@@ -17,9 +17,11 @@ import itertools
 import json
 import math
 import os.path
+import posixpath
 import re
 import sys
 import tempfile
+import urllib.parse
 from collections.abc import Generator
 from collections.abc import Iterator
 from collections.abc import Sequence
@@ -100,6 +102,7 @@ def _natural_key(s: str) -> tuple[int | str, ...]:
 
 class Package(NamedTuple):
     filename: str
+    download_url: str | None
     name: str
     version: str | None
     parsed_version: packaging.version.Version
@@ -151,8 +154,12 @@ class Package(NamedTuple):
         return info
 
     def url(self, base_url: str, *, include_hash: bool = True) -> str:
-        hash_part = f'#{self.hash}' if self.hash and include_hash else ''
-        return f'{base_url.rstrip("/")}/{self.filename}{hash_part}'
+        url = self.download_url if self.download_url is not None else f'{base_url.rstrip("/")}/{self.filename}'
+        if self.hash and include_hash:
+            parts = urllib.parse.urlsplit(url)
+            if not parts.fragment:
+                url = urllib.parse.urlunsplit(parts._replace(fragment=self.hash))
+        return url
 
     @property
     def packagetype(self) -> str:
@@ -192,6 +199,7 @@ class Package(NamedTuple):
             cls,
             *,
             filename: str,
+            download_url: str | None = None,
             hash: str | None = None,
             requires_dist: Sequence[str] | None = None,
             requires_python: str | None = None,
@@ -202,10 +210,15 @@ class Package(NamedTuple):
     ) -> Package:
         if not re.match(r'[a-zA-Z0-9_\-\.\+]+$', filename) or '..' in filename:
             raise ValueError(f'Unsafe package name: {filename}')
+        if download_url is not None:
+            parsed_download_url = urllib.parse.urlsplit(download_url)
+            if parsed_download_url.scheme not in {'http', 'https'} or not parsed_download_url.netloc:
+                raise ValueError(f'Unsafe package URL: {download_url}')
 
         name, version = guess_name_version_from_filename(filename)
         return cls(
             filename=filename,
+            download_url=download_url,
             name=packaging.utils.canonicalize_name(name),
             version=version,
             parsed_version=packaging.version.parse(version or '0'),
@@ -441,8 +454,17 @@ def _create_packages(
     return packages
 
 
+def _package_info_from_line(line: str) -> dict[str, Any]:
+    parsed = urllib.parse.urlsplit(line)
+    if parsed.scheme in {'http', 'https'} and parsed.netloc:
+        filename = urllib.parse.unquote(posixpath.basename(parsed.path))
+        return {'filename': filename, 'download_url': line}
+    else:
+        return {'filename': line}
+
+
 def package_list(path: str) -> dict[str, set[Package]]:
-    return _create_packages({'filename': line} for line in _lines_from_path(path))
+    return _create_packages(_package_info_from_line(line) for line in _lines_from_path(path))
 
 
 def package_list_json(path: str) -> dict[str, set[Package]]:

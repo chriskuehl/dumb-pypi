@@ -83,6 +83,10 @@ ocflib-2016.10.31.0.40-py2.py3-none-any.whl
 pre_commit-0.9.2.tar.gz
 ```
 
+The plain-text package list can also contain HTTP(S) package URLs. In that
+case, dumb-pypi uses the last path component as the package filename and links
+to the URL directly in the generated index.
+
 You should also know a URL to access these packages (if you serve them from the
 same host as the index, it can be a relative URL). For example, it might be
 `https://my-pypi-packages.s3.amazonaws.com/` or `../../pool/`.
@@ -114,6 +118,7 @@ object per line, like this:
 | Key                  | Required? | Description |
 | -------------------- | --------- | ----------- |
 | `filename`           | Yes       | Name of the file |
+| `download_url`       | No        | Absolute URL to link directly instead of building the URL from `--packages-url` |
 | `hash`               | No        | Hash of the file in the format `<hashalgo>=<hashvalue>` |
 | `requires_python`    | No        | Python requirement string for the package ([PEP345](https://peps.python.org/pep-0345/#requires-python)) |
 | `core_metadata`      | No        | Either string `"true"` or a string in the format `<hashalgo>=<hashvalue>` to indicate metadata is available for this file by appending `.metadata` to the file URL ([PEP658](https://peps.python.org/pep-0658/), [PEP714](https://peps.python.org/pep-0714/)) |

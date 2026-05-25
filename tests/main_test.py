@@ -98,6 +98,15 @@ def test_package_invalid(filename):
         main.Package.create(filename=filename)
 
 
+@pytest.mark.parametrize('download_url', (
+    'relative/f-1.0.tar.gz',
+    'javascript://example.com/f-1.0.tar.gz',
+))
+def test_package_invalid_download_url(download_url):
+    with pytest.raises(ValueError):
+        main.Package.create(filename='f-1.0.tar.gz', download_url=download_url)
+
+
 def test_package_url_no_hash():
     package = main.Package.create(filename='f.tar.gz')
     assert package.url('/prefix') == '/prefix/f.tar.gz'
@@ -106,6 +115,23 @@ def test_package_url_no_hash():
 def test_package_url_with_hash():
     package = main.Package.create(filename='f.tar.gz', hash='sha256=badf00d')
     assert package.url('/prefix') == '/prefix/f.tar.gz#sha256=badf00d'
+
+
+def test_package_url_with_download_url():
+    url = 'https://github.com/acme/packages/releases/download/v1.0/f-1.0.tar.gz'
+    package = main.Package.create(filename='f-1.0.tar.gz', download_url=url)
+    assert package.url('/prefix') == url
+
+
+def test_package_url_with_download_url_and_hash():
+    url = 'https://github.com/acme/packages/releases/download/v1.0/f-1.0.tar.gz'
+    package = main.Package.create(
+        filename='f-1.0.tar.gz',
+        download_url=url,
+        hash='sha256=badf00d',
+    )
+    assert package.url('/prefix') == f'{url}#sha256=badf00d'
+    assert package.url('/prefix', include_hash=False) == url
 
 
 @pytest.mark.parametrize(
@@ -161,6 +187,15 @@ def test_package_info_minimal_info():
     }
 
 
+def test_package_info_with_download_url():
+    url = 'https://github.com/acme/packages/releases/download/v1.0/f-1.0.tar.gz'
+    ret = main.Package.create(
+        filename='f-1.0.tar.gz',
+        download_url=url,
+    ).json_info('/prefix')
+    assert ret['url'] == url
+
+
 def test_input_json_all_info():
     package = main.Package.create(
         filename='f-1.0.tar.gz',
@@ -189,6 +224,16 @@ def test_input_json_all_info():
 def test_input_json_minimal():
     package = main.Package.create(filename='f-1.0.tar.gz')
     assert package.input_json() == {'filename': 'f-1.0.tar.gz'}
+    assert main.Package.create(**package.input_json()) == package
+
+
+def test_input_json_with_download_url():
+    url = 'https://github.com/acme/packages/releases/download/v1.0/f-1.0.tar.gz'
+    package = main.Package.create(filename='f-1.0.tar.gz', download_url=url)
+    assert package.input_json() == {
+        'filename': 'f-1.0.tar.gz',
+        'download_url': url,
+    }
     assert main.Package.create(**package.input_json()) == package
 
 
@@ -309,6 +354,27 @@ def test_build_repo_smoke_test(tmpdir):
     assert tmpdir.join('simple', 'ocflib', 'index.html').check(file=True)
     assert tmpdir.join('pypi', 'ocflib', 'json').check(file=True)
     assert tmpdir.join('pypi', 'ocflib', '2016.12.10.1.48', 'json').check(file=True)
+
+
+def test_build_repo_with_package_list_urls(tmpdir):
+    url = 'https://github.com/acme/packages/releases/download/v1.0/pkg-1.0.tar.gz'
+    package_list = tmpdir.join('package-list')
+    package_list.write(f'{url}\n')
+    main.main((
+        '--package-list', package_list.strpath,
+        '--output-dir', tmpdir.strpath,
+        '--packages-url', '../../pool/',
+        '--no-generate-timestamp',
+    ))
+
+    package_page = tmpdir.join('simple', 'pkg', 'index.html').read()
+    assert f'href="{url}"' in package_page
+
+    with tmpdir.join('packages.json').open() as f:
+        assert json.loads(f.readline()) == {
+            'filename': 'pkg-1.0.tar.gz',
+            'download_url': url,
+        }
 
 
 def _write_json_package_list(path, packages):
