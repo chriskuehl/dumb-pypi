@@ -81,6 +81,14 @@ def guess_name_version_from_filename(
                     if '.' in part and re.search('[0-9]', part):
                         name, version = '-'.join(parts[0:i]), '-'.join(parts[i:])
 
+                if version is None:
+                    try:
+                        version = str(packaging.utils.parse_sdist_filename(filename)[1])
+                    except packaging.utils.InvalidSdistFilename:
+                        pass
+                    else:
+                        name = name.rsplit('-', 1)[0]
+
         # possible with poorly-named files
         if len(name) <= 0:
             raise ValueError(f'Invalid package name: {filename}')

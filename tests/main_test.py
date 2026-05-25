@@ -37,7 +37,8 @@ def test_natural_key(s, expected):
 
     # other stuff
     ('aspy.yaml.zip', 'aspy.yaml', None),
-    ('ocflib-3-4.tar.gz', 'ocflib-3-4', None),
+    ('ocflib-3-4.tar.gz', 'ocflib-3', '4'),
+    ('systemd-python-234.tar.gz', 'systemd-python', '234'),
     ('aspy.yaml-0.2.1.tar.gz', 'aspy.yaml', '0.2.1'),
     ('numpy-1.11.0rc1.tar.gz', 'numpy', '1.11.0rc1'),
     ('pandas-0.2beta.tar.gz', 'pandas', '0.2beta'),
