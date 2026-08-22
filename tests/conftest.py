@@ -18,15 +18,15 @@ UrlAndPath = collections.namedtuple('UrlAndPath', ('url', 'path'))
 
 
 @pytest.fixture(scope='session')
-def running_server(tmpdir_factory):
+def running_server(tmp_path_factory):
     ip = '127.0.0.1'
     port = ephemeral_port_reserve.reserve(ip=ip)
     url = f'http://{ip}:{port}'
 
-    path = tmpdir_factory.mktemp('http')
+    path = tmp_path_factory.mktemp('http')
     proc = subprocess.Popen(
         (sys.executable, '-m', 'http.server', '-b', ip, str(port)),
-        cwd=path.strpath,
+        cwd=str(path),
     )
     try:
         for _ in range(100):
@@ -52,7 +52,8 @@ def tmpweb(running_server, tmpdir):
 
     # symlink some uuid under the running server path to our tmpdir
     name = str(uuid.uuid4())
-    running_server.path.join(name).mksymlinkto(path)
+    # running_server.path is a pathlib.Path; `path` is a py.path.local
+    (running_server.path / name).symlink_to(path.strpath, target_is_directory=True)
 
     return UrlAndPath(f'{running_server.url}/{name}', path)
 
