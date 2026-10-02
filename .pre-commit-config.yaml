@@ -37,4 +37,4 @@ repos:
     rev: v2.3.1
     hooks:
     -   id: mypy
-        additional_dependencies: [types-requests]
+        additional_dependencies: ['packaging>=26.3', types-requests]
