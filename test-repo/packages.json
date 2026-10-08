@@ -21758,6 +21758,7 @@
 {"filename": "simple_workflow-0.1.46-py2-none-any.whl", "hash": "md5=aac52913bcfe0a1db043159ecf40bb4a", "requires_dist": ["urllib3 (<1.27,>=1.21.1)", "certifi (>=2017.4.17)\"", "chardet (<5,>=3.0.2) ; python_version < \"3\""], "upload_timestamp": 1074716324, "uploaded_by": "ckuehl"}
 {"filename": "simple-workflow-0.1.46.tar.gz", "hash": "md5=e60eafc417627da79fcff2e4879a751a", "upload_timestamp": 1274968783, "uploaded_by": "rtkit"}
 {"filename": "simple_workflow-0.1.47-py2-none-any.whl", "hash": "md5=ab2af2c2d799e5666451d7b8981d8a10", "upload_timestamp": 1375846469, "uploaded_by": "puppet"}
+{"filename": "simple_workflow-0.1.47-pypy-none-any.whl", "hash": "md5=fc49be06ac8047fff2b93fc9c4cee843", "requires_dist": ["urllib3 (<1.27,>=1.21.1)", "certifi (>=2017.4.17)\"", "chardet (<5,>=3.0.2) ; python_version < \"3\""], "upload_timestamp": 1292866585, "uploaded_by": "www-data"}
 {"filename": "simple-workflow-0.1.47.tar.gz", "hash": "md5=1f0b312b2e4a04aa72a99c16aac50d5a", "upload_timestamp": 1070556509, "uploaded_by": "systemd-bus-proxy"}
 {"filename": "simple-workflow-0.1.48.tar.gz", "hash": "md5=1bbb74b210a2498cf4f1788f87b4ea61", "upload_timestamp": 1153415761, "uploaded_by": "_apt"}
 {"filename": "simple-workflow-0.1.49.tar.gz", "hash": "md5=18eaf29ddcbfe4e670bff02b05c26ad9", "upload_timestamp": 1037320103, "uploaded_by": "lightdm"}
