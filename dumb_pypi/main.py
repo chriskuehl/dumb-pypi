@@ -132,7 +132,7 @@ class Package(NamedTuple):
     @property
     def formatted_upload_time(self) -> str:
         assert self.upload_timestamp is not None
-        dt = datetime.datetime.fromtimestamp(self.upload_timestamp, datetime.timezone.utc)
+        dt = datetime.datetime.fromtimestamp(self.upload_timestamp, datetime.UTC)
         return _format_datetime(dt)
 
     @property
@@ -305,7 +305,7 @@ def build_repo(
 ) -> None:
     simple = os.path.join(settings.output_dir, 'simple')
     pypi = os.path.join(settings.output_dir, 'pypi')
-    current_date = _format_datetime(datetime.datetime.now(datetime.timezone.utc))
+    current_date = _format_datetime(datetime.datetime.now(datetime.UTC))
 
     jinja_env = jinja2.Environment(
         loader=jinja2.PackageLoader('dumb_pypi', 'templates'),
